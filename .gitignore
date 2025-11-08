@@ -1,4 +1,7 @@
-    
+# other secret files
+backend/notebooks/credentials.json
+backend/notebooks/token.json
+
 # 1. Environment Files (CRITICAL)
 .env
 .venv
