@@ -11,9 +11,10 @@ from googleapiclient.discovery import build
 
 from app.config import settings
 from app.clients.db import get_db
+from app.clients._base import AbstractClient
 
 
-class GoogleCalendarClient:
+class RealGoogleCalendarClient(AbstractClient):
     """Client for interacting with Google Calendar API."""
 
     def __init__(self):
@@ -218,6 +219,118 @@ class GoogleCalendarClient:
         return "\n".join(context_lines)
 
 
-def get_calendar_client() -> GoogleCalendarClient:
-    """Dependency function to get GoogleCalendarClient instance."""
-    return GoogleCalendarClient()
+class MockGoogleCalendarClient(AbstractClient):
+    """Mock Google Calendar client for development/testing."""
+
+    def get_events(
+        self,
+        user_id: UUID,
+        time_min: datetime,
+        time_max: datetime
+    ) -> List[Dict]:
+        """Return mock calendar events."""
+        print(f"--- Returning Mock Calendar Events for user {user_id} ---")
+
+        # Simulate some busy times throughout the week
+        mock_events = [
+            {
+                'summary': 'Mock Team Meeting',
+                'start': (time_min + timedelta(days=1, hours=10)).isoformat() + 'Z',
+                'end': (time_min + timedelta(days=1, hours=11, minutes=30)).isoformat() + 'Z',
+                'description': 'Weekly standup meeting'
+            },
+            {
+                'summary': 'Mock Dentist Appointment',
+                'start': (time_min + timedelta(days=3, hours=14)).isoformat() + 'Z',
+                'end': (time_min + timedelta(days=3, hours=15)).isoformat() + 'Z',
+                'description': 'Regular checkup'
+            },
+            {
+                'summary': 'Mock Exam',
+                'start': (time_min + timedelta(days=2, hours=9)).isoformat() + 'Z',
+                'end': (time_min + timedelta(days=2, hours=12)).isoformat() + 'Z',
+                'description': 'Final exam - stressful!'
+            }
+        ]
+
+        return mock_events
+
+    def find_free_slots(
+        self,
+        user1_id: UUID,
+        user2_id: UUID,
+        time_frame_start: datetime,
+        time_frame_end: datetime,
+        slot_duration_hours: float = 2.0
+    ) -> List[Dict]:
+        """Return mock free time slots for both users."""
+        print(f"--- Finding Mock Free Slots for users {user1_id} and {user2_id} ---")
+
+        # Generate realistic free slots (evenings and weekends)
+        free_slots = []
+        current = time_frame_start
+        days_to_check = (time_frame_end - time_frame_start).days
+
+        for day in range(days_to_check):
+            # Evening slot (6pm-9pm)
+            evening_start = current + timedelta(days=day, hours=18)
+            evening_end = evening_start + timedelta(hours=3)
+
+            if evening_end <= time_frame_end:
+                free_slots.append({
+                    'start': evening_start.isoformat(),
+                    'end': evening_end.isoformat(),
+                    'duration_hours': 3.0
+                })
+
+            # Weekend afternoon slot (Saturdays and Sundays)
+            if (current + timedelta(days=day)).weekday() in [5, 6]:  # 5=Saturday, 6=Sunday
+                afternoon_start = current + timedelta(days=day, hours=14)
+                afternoon_end = afternoon_start + timedelta(hours=4)
+
+                if afternoon_end <= time_frame_end:
+                    free_slots.append({
+                        'start': afternoon_start.isoformat(),
+                        'end': afternoon_end.isoformat(),
+                        'duration_hours': 4.0
+                    })
+
+        return free_slots[:5]  # Return up to 5 slots
+
+    def get_events_context(
+        self,
+        user_id: UUID,
+        time_frame_start: datetime,
+        time_frame_end: datetime
+    ) -> str:
+        """Return mock calendar context for AI."""
+        print(f"--- Returning Mock Calendar Context for user {user_id} ---")
+
+        # Get mock events and format them
+        events = self.get_events(user_id, time_frame_start, time_frame_end)
+
+        if not events:
+            return "No scheduled events in this time period."
+
+        context_lines = ["Scheduled events:"]
+        for event in events:
+            start = event['start']
+            summary = event['summary']
+            description = event.get('description', '')
+
+            line = f"- {start}: {summary}"
+            if description:
+                line += f" ({description})"
+            context_lines.append(line)
+
+        return "\n".join(context_lines)
+
+
+def get_calendar_client() -> AbstractClient:
+    """
+    Factory function to get Google Calendar client.
+    Returns real or mock client based on USE_REAL_GOOGLE_CALENDAR setting.
+    """
+    if settings.use_real_google_calendar:
+        return RealGoogleCalendarClient()
+    return MockGoogleCalendarClient()

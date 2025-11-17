@@ -4,7 +4,7 @@ from app.core.models import (
     DateGenerationRequest,
     CoupleeDateGenerationRequest,
     DatePlanResponse,
-    User
+    User,
 )
 from app.services.date_generator import (
     DateGeneratorService,
@@ -65,16 +65,12 @@ def generate_couple_date(
     """
     try:
         return service.generate_couple_date_plan(
-            user_id=current_user.id,
-            request=request
+            user_id=current_user.id, request=request
         )
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate date plan: {str(e)}"
+            detail=f"Failed to generate date plan: {str(e)}",
         )

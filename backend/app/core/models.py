@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 
@@ -18,7 +18,14 @@ class DateGenerationRequest(BaseModel):
 class CoupleeDateGenerationRequest(BaseModel):
     """Enhanced date generation request using couple's calendars"""
     prompt: str
-    time_frame_days: int = Field(default=7, description="Number of days from today to search")
+    start_date: datetime = Field(
+        default_factory=lambda: datetime.now(),
+        description="Start date and time for date search (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)"
+    )
+    end_date: datetime = Field(
+        default_factory=lambda: datetime.now() + timedelta(days=7),
+        description="End date and time for date search (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)"
+    )
     location: str
 
 
@@ -74,6 +81,19 @@ class LoginResponse(BaseModel):
 class GoogleAuthURL(BaseModel):
     """Response containing Google OAuth URL"""
     auth_url: str
+
+
+class RegisterRequest(BaseModel):
+    """Request for email/password registration"""
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    full_name: str
+
+
+class LoginRequest(BaseModel):
+    """Request for email/password login"""
+    email: EmailStr
+    password: str
 
 
 # ============================================================================

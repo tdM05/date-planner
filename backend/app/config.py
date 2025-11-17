@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     jwt_expiration_minutes: int = Field(default=10080, alias="JWT_EXPIRATION_MINUTES")  # 7 days
 
+    # API Mock/Real Configuration
+    # Set to True to use real APIs (costs money), False for free mock data
+    use_real_claude: bool = Field(default=False, alias="USE_REAL_CLAUDE")
+    use_real_google_places: bool = Field(default=False, alias="USE_REAL_GOOGLE_PLACES")
+    use_real_weather: bool = Field(default=False, alias="USE_REAL_WEATHER")
+    use_real_google_calendar: bool = Field(default=False, alias="USE_REAL_GOOGLE_CALENDAR")
+
+    # Development/Testing Configuration
+    disable_auth_in_dev: bool = Field(default=False, alias="DISABLE_AUTH_IN_DEV")
+    test_user_id: str = Field(default="82240440-3508-41d3-8eb4-b5de91095249", alias="TEST_USER_ID")
+
     @property
     def is_development(self) -> bool:
         return self.APP_ENV == "development"

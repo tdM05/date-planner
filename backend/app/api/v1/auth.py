@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import RedirectResponse
 
 from app.services.auth import get_auth_service, AuthService
-from app.core.models import GoogleAuthURL, LoginResponse, UserResponse
+from app.core.models import GoogleAuthURL, LoginResponse, UserResponse, RegisterRequest, LoginRequest
 from app.core.dependencies import get_current_user
 
 
@@ -71,3 +71,71 @@ def get_current_user_info(
         full_name=current_user.full_name,
         created_at=current_user.created_at
     )
+
+
+@router.post("/register", response_model=LoginResponse)
+def register(
+    request: RegisterRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Register a new user with email and password.
+
+    Creates a new user account and returns a JWT token for immediate login.
+
+    Args:
+        request: Registration data (email, password, full_name)
+
+    Returns:
+        LoginResponse with JWT token and user information
+
+    Raises:
+        400: If email already exists
+        500: If registration fails
+    """
+    try:
+        return auth_service.register_user(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
+
+
+@router.post("/login", response_model=LoginResponse)
+def login(
+    request: LoginRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Login with email and password.
+
+    Authenticates user and returns a JWT token.
+
+    Args:
+        request: Login credentials (email, password)
+
+    Returns:
+        LoginResponse with JWT token and user information
+
+    Raises:
+        401: If email or password is incorrect
+        500: If login fails
+    """
+    try:
+        return auth_service.login_user(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed: {str(e)}"
+        )

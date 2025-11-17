@@ -10,11 +10,16 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 from app.config import settings
 from app.clients.db import get_db
-from app.core.models import User, UserCreate, UserResponse, LoginResponse
+from app.core.models import User, UserCreate, UserResponse, LoginResponse, RegisterRequest, LoginRequest
 from ._base import AbstractService
+
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # OAuth 2.0 scopes for Google Calendar and user info
@@ -236,6 +241,108 @@ class AuthService(AbstractService):
         if result.data:
             return User(**result.data[0])
         return None
+
+    def _hash_password(self, password: str) -> str:
+        """Hash a password using bcrypt."""
+        return pwd_context.hash(password)
+
+    def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verify a password against its hash."""
+        return pwd_context.verify(plain_password, hashed_password)
+
+    def register_user(self, request: RegisterRequest) -> LoginResponse:
+        """
+        Register a new user with email and password.
+
+        Args:
+            request: Registration request with email, password, and full_name
+
+        Returns:
+            LoginResponse with JWT token and user info
+
+        Raises:
+            ValueError: If email already exists
+        """
+        # Check if email already exists
+        result = self.db.table('users').select('*').eq('email', request.email).execute()
+
+        if result.data:
+            raise ValueError(f"Email {request.email} is already registered")
+
+        # Hash the password
+        password_hash = self._hash_password(request.password)
+
+        # Create user in database
+        new_user = {
+            'email': request.email,
+            'full_name': request.full_name,
+            'password_hash': password_hash
+        }
+        created = self.db.table('users').insert(new_user).execute()
+        user_data = created.data[0]
+
+        # Create user object
+        user = User(**user_data)
+
+        # Generate JWT token
+        access_token = self._create_access_token(user.id)
+
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                created_at=user.created_at
+            )
+        )
+
+    def login_user(self, request: LoginRequest) -> LoginResponse:
+        """
+        Login user with email and password.
+
+        Args:
+            request: Login request with email and password
+
+        Returns:
+            LoginResponse with JWT token and user info
+
+        Raises:
+            ValueError: If email not found or password incorrect
+        """
+        # Find user by email
+        result = self.db.table('users').select('*').eq('email', request.email).execute()
+
+        if not result.data:
+            raise ValueError("Invalid email or password")
+
+        user_data = result.data[0]
+
+        # Check if user has a password hash (might be Google OAuth only user)
+        if not user_data.get('password_hash'):
+            raise ValueError("This account uses Google OAuth. Please sign in with Google.")
+
+        # Verify password
+        if not self._verify_password(request.password, user_data['password_hash']):
+            raise ValueError("Invalid email or password")
+
+        # Create user object
+        user = User(**user_data)
+
+        # Generate JWT token
+        access_token = self._create_access_token(user.id)
+
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserResponse(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                created_at=user.created_at
+            )
+        )
 
 
 def get_auth_service() -> AuthService:

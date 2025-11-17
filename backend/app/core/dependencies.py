@@ -2,23 +2,26 @@
 FastAPI dependencies for authentication and authorization.
 """
 from typing import Optional
+from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.services.auth import get_auth_service, AuthService
 from app.core.models import User
+from app.config import settings
 
 
 # Security scheme for JWT bearer token
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Don't auto-error so we can handle dev bypass
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     auth_service: AuthService = Depends(get_auth_service)
 ) -> User:
     """
     Dependency to get current authenticated user from JWT token.
+    In development mode with DISABLE_AUTH_IN_DEV=true, bypasses auth and returns test user.
 
     Args:
         credentials: HTTP Authorization credentials (Bearer token)
@@ -30,6 +33,25 @@ async def get_current_user(
     Raises:
         HTTPException: If token is invalid or user not found
     """
+    # DEVELOPMENT BYPASS: Skip authentication if enabled
+    if settings.is_development and settings.disable_auth_in_dev:
+        print(f"--- DEV MODE: Auth bypassed, using test user {settings.test_user_id} ---")
+        test_user = auth_service.get_user_by_id(UUID(settings.test_user_id))
+        if test_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Test user {settings.test_user_id} not found in database",
+            )
+        return test_user
+
+    # Normal authentication flow
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
 
     # Verify token and get user ID

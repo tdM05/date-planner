@@ -1,0 +1,50 @@
+  Summary: How to Link Couples
+
+  ###1. Create two users (or use existing ones)
+  POST /api/v1/auth/register
+  {
+    "email": "user1@example.com",
+    "password": "password123",
+    "full_name": "User One"
+  }
+
+  2. User 1 logs in
+
+  POST /api/v1/auth/login
+  {
+    "email": "user1@example.com",
+    "password": "password123"
+  }
+  Save the access_token
+
+  3. User 1 sends invitation
+
+  POST /api/v1/couples/invite
+  Authorization: Bearer <user1_token>
+  {
+    "invitee_email": "user2@example.com"
+  }
+  Save the token from the response
+
+  4. User 2 logs in
+
+  POST /api/v1/auth/login
+  {
+    "email": "user2@example.com",
+    "password": "password123"
+  }
+  Save the access_token
+
+  5. User 2 accepts invitation
+
+  POST /api/v1/couples/accept
+  Authorization: Bearer <user2_token>
+  {
+    "token": "<invitation_token>"
+  }
+  Returns couple_id - they're now linked!
+
+  6. Either user can get partner info
+
+  GET /api/v1/couples/partner
+  Authorization: Bearer <either_token>
