@@ -1,7 +1,7 @@
 """
 Google Calendar API client for fetching user calendar events.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 from uuid import UUID
 
@@ -12,6 +12,13 @@ from googleapiclient.discovery import build
 from app.config import settings
 from app.clients.db import get_db
 from app.clients._base import AbstractClient
+
+
+def _ensure_utc(dt: datetime) -> datetime:
+    """Ensure datetime is timezone-aware (UTC)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 class RealGoogleCalendarClient(AbstractClient):
@@ -84,11 +91,15 @@ class RealGoogleCalendarClient(AbstractClient):
         # Build Calendar API service
         service = build('calendar', 'v3', credentials=credentials)
 
+        # Ensure datetimes are timezone-aware (UTC)
+        time_min = _ensure_utc(time_min)
+        time_max = _ensure_utc(time_max)
+
         # Call the Calendar API
         events_result = service.events().list(
             calendarId='primary',
-            timeMin=time_min.isoformat() + 'Z',
-            timeMax=time_max.isoformat() + 'Z',
+            timeMin=time_min.isoformat(),
+            timeMax=time_max.isoformat(),
             singleEvents=True,
             orderBy='startTime'
         ).execute()
@@ -134,6 +145,10 @@ class RealGoogleCalendarClient(AbstractClient):
         Returns:
             List of free time slots with start and end times
         """
+        # Ensure time_frame datetimes are timezone-aware (UTC)
+        time_frame_start = _ensure_utc(time_frame_start)
+        time_frame_end = _ensure_utc(time_frame_end)
+
         # Get events for both users
         user1_events = self.get_events(user1_id, time_frame_start, time_frame_end)
         user2_events = self.get_events(user2_id, time_frame_start, time_frame_end)
@@ -265,6 +280,10 @@ class MockGoogleCalendarClient(AbstractClient):
     ) -> List[Dict]:
         """Return mock free time slots for both users."""
         print(f"--- Finding Mock Free Slots for users {user1_id} and {user2_id} ---")
+
+        # Ensure time_frame datetimes are timezone-aware (UTC)
+        time_frame_start = _ensure_utc(time_frame_start)
+        time_frame_end = _ensure_utc(time_frame_end)
 
         # Generate realistic free slots (evenings and weekends)
         free_slots = []

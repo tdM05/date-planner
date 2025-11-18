@@ -68,7 +68,20 @@ def generate_couple_date(
             user_id=current_user.id, request=request
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        error_message = str(e)
+
+        # Use HTTP 428 (Precondition Required) for calendar connection errors
+        if "calendar" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+                detail=error_message
+            )
+
+        # Use HTTP 400 for other business logic errors (e.g., not in a couple)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_message
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

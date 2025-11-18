@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 
@@ -17,16 +17,26 @@ class DateGenerationRequest(BaseModel):
 
 class CoupleeDateGenerationRequest(BaseModel):
     """Enhanced date generation request using couple's calendars"""
-    prompt: str
+    prompt: str = Field(
+        ...,
+        description="Description of desired date type",
+        examples=["romantic date night", "fun outdoor activity", "cozy dinner"]
+    )
     start_date: datetime = Field(
-        default_factory=lambda: datetime.now(),
-        description="Start date and time for date search (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Start date and time for date search (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)",
+        examples=["2025-11-17T18:00:00"]
     )
     end_date: datetime = Field(
-        default_factory=lambda: datetime.now() + timedelta(days=7),
-        description="End date and time for date search (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)"
+        default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=7),
+        description="End date and time for date search (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)",
+        examples=["2025-11-24T18:00:00"]
     )
-    location: str
+    location: str = Field(
+        ...,
+        description="Location for the date",
+        examples=["Toronto, ON", "San Francisco, CA", "New York, NY"]
+    )
 
 
 class Event(BaseModel):
@@ -81,6 +91,14 @@ class LoginResponse(BaseModel):
 class GoogleAuthURL(BaseModel):
     """Response containing Google OAuth URL"""
     auth_url: str
+
+
+class CalendarStatusResponse(BaseModel):
+    """Response indicating calendar connection status for user and partner"""
+    user_connected: bool = Field(..., description="Whether current user has Google Calendar connected")
+    partner_connected: bool = Field(..., description="Whether partner has Google Calendar connected")
+    both_connected: bool = Field(..., description="Convenience flag - true only if both have calendars connected")
+    partner_email: Optional[str] = Field(None, description="Partner's email address if user is in a couple")
 
 
 class RegisterRequest(BaseModel):

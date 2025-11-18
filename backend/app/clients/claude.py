@@ -183,6 +183,117 @@ Pick the best venue from the options above and suggest a good time for this date
             print(f"Error calling Claude API: {e}")
             return None
 
+    def pick_top_events(
+        self, all_venue_options: List[dict], num_events: int, weather: str, user_context: str
+    ) -> List[dict]:
+        """
+        Pick the top N date events from ALL collected venue options.
+        More efficient than calling pick_best_venue multiple times.
+
+        Args:
+            all_venue_options: List of all venues with their idea context
+                Format: [{"venue": {...}, "idea_concept": "...", "activity_type": "..."}, ...]
+            num_events: Number of top events to return (e.g., 3)
+            weather: Weather forecast information
+            user_context: Context about the couple's schedules
+
+        Returns:
+            List of selected events: [{"venue_name": "...", "suggested_time": "...", "explanation": "..."}, ...]
+        """
+        print(f"--- Calling Real Claude API (picking top {num_events} events from {len(all_venue_options)} total venues) ---")
+
+        if not all_venue_options:
+            return []
+
+        # Define the tool for picking top events
+        pick_events_tool = {
+            "name": "select_top_events",
+            "description": f"Selects the top {num_events} date events from all available venue options.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "events": {
+                        "type": "array",
+                        "description": f"The top {num_events} selected date events",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "venue_name": {
+                                    "type": "string",
+                                    "description": "Name of the selected venue from the provided options",
+                                },
+                                "suggested_time": {
+                                    "type": "string",
+                                    "description": "Suggested date and time for this event",
+                                },
+                                "explanation": {
+                                    "type": "string",
+                                    "description": "Compelling explanation for why this event is perfect",
+                                },
+                            },
+                            "required": ["venue_name", "suggested_time", "explanation"],
+                        },
+                        "minItems": num_events,
+                        "maxItems": num_events,
+                    }
+                },
+                "required": ["events"],
+            },
+        }
+
+        # Format all venue options for Claude
+        venues_text = []
+        for i, option in enumerate(all_venue_options, 1):
+            venue = option["venue"]
+            concept = option.get("idea_concept", "Unknown")
+            activity = option.get("activity_type", "Unknown")
+            venues_text.append(
+                f"{i}. [{activity}] {venue.get('name', 'Unknown')} - {concept}\n"
+                f"   Address: {venue.get('address', 'N/A')}\n"
+                f"   Rating: {venue.get('rating', 'N/A')}"
+            )
+
+        venues_formatted = "\n\n".join(venues_text)
+
+        prompt = f"""
+Weather: {weather}
+Couple's Context: {user_context}
+
+All Available Venue Options ({len(all_venue_options)} total):
+{venues_formatted}
+
+Select the top {num_events} most suitable date events from the options above.
+Consider variety (different types of activities), ratings, and how well they fit the weather and couple's context.
+"""
+
+        system_prompt = (
+            f"You are a relationship planner selecting the best {num_events} date events. "
+            "Choose venues that offer variety and are well-suited to the couple. "
+            f"You must use the `select_top_events` tool to return exactly {num_events} events."
+        )
+
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=2048,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}],
+                tools=[pick_events_tool],
+                tool_choice={"type": "tool", "name": "select_top_events"},
+            )
+
+            if response.stop_reason == "tool_use":
+                tool_call = response.content[0]
+                if tool_call.type == "tool_use":
+                    result = tool_call.input
+                    return result.get("events", [])
+
+            return []
+
+        except Exception as e:
+            print(f"Error calling Claude API: {e}")
+            return []
+
 
 class MockClaudeClient(AbstractClient):
     """Mock Claude client for development/testing."""
@@ -225,6 +336,27 @@ class MockClaudeClient(AbstractClient):
             "suggested_time": "Saturday, 7:00 PM",
             "explanation": f"This is a mock selection for {idea_concept}. The venue looks great!",
         }
+
+    def pick_top_events(
+        self, all_venue_options: List[dict], num_events: int, weather: str, user_context: str
+    ) -> List[dict]:
+        """Pick mock top events from all venue options."""
+        print(f"--- Mock: Picking top {num_events} events from {len(all_venue_options)} venues ---")
+
+        if not all_venue_options:
+            return []
+
+        # Just pick the first N venues for mock
+        selected_events = []
+        for i, option in enumerate(all_venue_options[:num_events]):
+            venue = option["venue"]
+            selected_events.append({
+                "venue_name": venue.get("name", f"Mock Venue {i+1}"),
+                "suggested_time": f"Day {i+1}, 7:00 PM",
+                "explanation": f"Mock selection: This {option.get('activity_type', 'venue')} looks perfect!",
+            })
+
+        return selected_events
 
 
 def get_claude_client() -> AbstractClient:

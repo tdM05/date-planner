@@ -48,3 +48,32 @@
 
   GET /api/v1/couples/partner
   Authorization: Bearer <either_token>
+
+
+How to connect calendar":
+  // 1. Check calendar status on page load
+  const status = await fetch('/api/v1/auth/calendar-status', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }).then(r => r.json());
+
+  // 2. Show UI based on status
+  if (!status.user_connected) {
+    showButton('Connect Your Calendar', '/api/v1/auth/google/login');
+  }
+
+  if (!status.partner_connected && status.partner_email) {
+    showMessage(`Waiting for ${status.partner_email} to connect their calendar`);
+  }
+
+  // 3. Enable/disable Generate Date button
+  generateButton.disabled = !status.both_connected;
+
+  // 4. Handle 428 errors gracefully
+  try {
+    await generateDate();
+  } catch (error) {
+    if (error.status === 428) {
+      // Calendar not connected - redirect to connect
+      window.location.href = '/api/v1/auth/google/login';
+    }
+  }

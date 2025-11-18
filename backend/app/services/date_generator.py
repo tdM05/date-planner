@@ -18,6 +18,7 @@ from app.core.models import (
     DatePlanResponse,
     Event,
 )
+from app.utils.couple import get_user_couple, get_partner_id
 from ._base import AbstractService
 
 # Using the real classes for type hinting improves editor support.
@@ -82,14 +83,29 @@ class DateGeneratorService(AbstractService):
         Raises:
             ValueError: If user is not in a couple or calendar access fails
         """
+        # Check if user has connected their Google Calendar
+        user_result = self.db.table('users').select('google_refresh_token').eq('id', str(user_id)).execute()
+        if not user_result.data or not user_result.data[0].get('google_refresh_token'):
+            raise ValueError(
+                "Calendar not connected. Please connect your Google Calendar first by visiting /api/v1/auth/google/login"
+            )
+
         # Get user's couple relationship
-        couple = self._get_user_couple(user_id)
+        couple = get_user_couple(user_id)
         if not couple:
             raise ValueError("You must be in a couple to use this feature")
 
         # Get both partner IDs
         partner1_id = UUID(couple["partner1_id"])
         partner2_id = UUID(couple["partner2_id"])
+
+        # Get partner's ID using helper function
+        partner_id = get_partner_id(user_id, couple)
+        partner_result = self.db.table('users').select('google_refresh_token').eq('id', str(partner_id)).execute()
+        if not partner_result.data or not partner_result.data[0].get('google_refresh_token'):
+            raise ValueError(
+                "Your partner has not connected their Google Calendar yet. Both partners need to connect their calendars."
+            )
 
         # Use provided date range from request
         time_frame_start = request.start_date
@@ -157,44 +173,63 @@ Please suggest 3 diverse date idea CONCEPTS that:
         if not date_ideas:
             raise ValueError("Claude did not return any date ideas")
 
-        # PHASE 2: For each idea, find venues and have Claude pick the best
-        events = []
+        # PHASE 2: Collect all venues from Google Places
         context_summary = f"Partner 1: {user1_context}\nPartner 2: {user2_context}"
+        all_venue_options = []
 
         for idea in date_ideas:
             # Get the search query from the idea
             search_query = idea.get("search_query", idea.get("concept", ""))
             concept = idea.get("concept", "Unknown")
+            activity_type = idea.get("activity_type", "Activity")
 
-            # Find real places using Google Places
-            venues = []
-            # Note: Google Places returns a single place per query in our current implementation
-            # In a real implementation, we'd get multiple venues and let Claude pick
-            place = self.google.find_place(f"{search_query} in {request.location}")
-            if place and place.get("name"):
-                venues.append(place)
+            # Find real places using Google Places (returns list of 3-5 venues)
+            venues = self.google.find_place(
+                f"{search_query} in {request.location}",
+                max_results=5
+            )
 
             if not venues:
                 # Skip this idea if no venues found
+                print(f"No venues found for idea: {concept}")
                 continue
 
-            # Have Claude pick the best venue and time
-            selection = self.claude.pick_best_venue(
-                idea_concept=concept,
-                venue_options=venues,
-                weather=weather_info['forecast'],
-                user_context=context_summary,
+            print(f"Found {len(venues)} venues for '{concept}'")
+
+            # Add all venues to the collection with their context
+            for venue in venues:
+                all_venue_options.append({
+                    "venue": venue,
+                    "idea_concept": concept,
+                    "activity_type": activity_type,
+                })
+
+        if not all_venue_options:
+            raise ValueError("No venues found for any date ideas")
+
+        # PHASE 3: Have Claude pick the top 3 events from ALL venues (single API call)
+        print(f"Collected {len(all_venue_options)} total venues, asking Claude to pick top 3...")
+
+        selected_events = self.claude.pick_top_events(
+            all_venue_options=all_venue_options,
+            num_events=3,
+            weather=weather_info['forecast'],
+            user_context=context_summary,
+        )
+
+        # PHASE 4: Create Event objects from Claude's selections
+        events = []
+        for selection in selected_events:
+            # Find the venue details from all_venue_options
+            selected_venue_option = next(
+                (opt for opt in all_venue_options if opt["venue"].get("name") == selection["venue_name"]),
+                all_venue_options[0] if all_venue_options else None  # Fallback
             )
 
-            if selection:
-                # Find the selected venue details
-                selected_venue = next(
-                    (v for v in venues if v.get("name") == selection["selected_venue_name"]),
-                    venues[0]  # Fallback to first venue if name doesn't match
-                )
-
+            if selected_venue_option:
+                venue = selected_venue_option["venue"]
                 event = Event(
-                    name=selected_venue.get("name", selection["selected_venue_name"]),
+                    name=venue.get("name", selection["venue_name"]),
                     reason=selection["explanation"],
                     suggested_time=selection["suggested_time"],
                 )
@@ -206,32 +241,6 @@ Please suggest 3 diverse date idea CONCEPTS that:
         return DatePlanResponse(
             events=events, free_time_slots=free_slots[:10]  # Include top 10 free slots
         )
-
-    def _get_user_couple(self, user_id: UUID) -> dict:
-        """Get couple record for a user."""
-        # Check if user is partner1
-        result = (
-            self.db.table("couples")
-            .select("*")
-            .eq("partner1_id", str(user_id))
-            .execute()
-        )
-
-        if result.data:
-            return result.data[0]
-
-        # Check if user is partner2
-        result = (
-            self.db.table("couples")
-            .select("*")
-            .eq("partner2_id", str(user_id))
-            .execute()
-        )
-
-        if result.data:
-            return result.data[0]
-
-        return None
 
     def _format_free_slots(self, slots: List[Dict]) -> str:
         """Format free time slots for AI prompt."""

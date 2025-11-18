@@ -81,6 +81,7 @@ async def get_current_user_optional(
 ) -> Optional[User]:
     """
     Optional dependency to get current user (does not require authentication).
+    In development mode with DISABLE_AUTH_IN_DEV=true, returns the test user.
 
     Args:
         credentials: Optional HTTP Authorization credentials
@@ -89,6 +90,13 @@ async def get_current_user_optional(
     Returns:
         User object if authenticated, None otherwise
     """
+    # DEVELOPMENT BYPASS: Return test user if auth is disabled
+    if settings.is_development and settings.disable_auth_in_dev:
+        print(f"--- DEV MODE (optional): Using test user {settings.test_user_id} ---")
+        test_user = auth_service.get_user_by_id(UUID(settings.test_user_id))
+        return test_user
+
+    # Normal flow
     if credentials is None:
         return None
 

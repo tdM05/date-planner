@@ -2,7 +2,7 @@
 Authentication service for Google OAuth flow and JWT token management.
 """
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from uuid import UUID
 import secrets
 
@@ -73,15 +73,21 @@ class AuthService(AbstractService):
 
         return authorization_url
 
-    def handle_oauth_callback(self, code: str) -> LoginResponse:
+    def handle_oauth_callback(self, code: str, current_user: Optional[User] = None) -> Union[LoginResponse, Dict]:
         """
         Handle OAuth callback, exchange code for tokens, and create/update user.
 
+        Supports two use cases:
+        1. New user registration: No current_user → Creates new user account
+        2. Connect calendar: Has current_user → Updates existing user's google_refresh_token
+
         Args:
             code: Authorization code from Google OAuth callback
+            current_user: Optional - if provided, connects calendar to this user
 
         Returns:
-            LoginResponse with access token and user info
+            - If new user: LoginResponse with access token and user info
+            - If existing user: Dict with success message
         """
         # Exchange authorization code for tokens
         flow = Flow.from_client_config(
@@ -101,28 +107,41 @@ class AuthService(AbstractService):
         flow.fetch_token(code=code)
         credentials = flow.credentials
 
-        # Get user info from Google
-        user_info = self._get_google_user_info(credentials)
+        # CHECK: Is user already logged in?
+        if current_user:
+            # EXISTING USER: Just update their refresh_token
+            self.db.table('users').update({
+                'google_refresh_token': credentials.refresh_token
+            }).eq('id', str(current_user.id)).execute()
 
-        # Create or update user in database
-        user = self._create_or_update_user(
-            email=user_info['email'],
-            full_name=user_info.get('name', ''),
-            google_refresh_token=credentials.refresh_token
-        )
+            return {
+                "message": "Calendar connected successfully",
+                "user_id": str(current_user.id)
+            }
+        else:
+            # NEW USER: Create account (existing behavior)
+            # Get user info from Google
+            user_info = self._get_google_user_info(credentials)
 
-        # Generate JWT token
-        access_token = self._create_access_token(user.id)
-
-        return LoginResponse(
-            access_token=access_token,
-            user=UserResponse(
-                id=user.id,
-                email=user.email,
-                full_name=user.full_name,
-                created_at=user.created_at
+            # Create or update user in database
+            user = self._create_or_update_user(
+                email=user_info['email'],
+                full_name=user_info.get('name', ''),
+                google_refresh_token=credentials.refresh_token
             )
-        )
+
+            # Generate JWT token
+            access_token = self._create_access_token(user.id)
+
+            return LoginResponse(
+                access_token=access_token,
+                user=UserResponse(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    created_at=user.created_at
+                )
+            )
 
     def _get_google_user_info(self, credentials: Credentials) -> Dict:
         """
