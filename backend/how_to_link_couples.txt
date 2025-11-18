@@ -1,0 +1,79 @@
+  Summary: How to Link Couples
+
+  ###1. Create two users (or use existing ones)
+  POST /api/v1/auth/register
+  {
+    "email": "user1@example.com",
+    "password": "password123",
+    "full_name": "User One"
+  }
+
+  2. User 1 logs in
+
+  POST /api/v1/auth/login
+  {
+    "email": "user1@example.com",
+    "password": "password123"
+  }
+  Save the access_token
+
+  3. User 1 sends invitation
+
+  POST /api/v1/couples/invite
+  Authorization: Bearer <user1_token>
+  {
+    "invitee_email": "user2@example.com"
+  }
+  Save the token from the response
+
+  4. User 2 logs in
+
+  POST /api/v1/auth/login
+  {
+    "email": "user2@example.com",
+    "password": "password123"
+  }
+  Save the access_token
+
+  5. User 2 accepts invitation
+
+  POST /api/v1/couples/accept
+  Authorization: Bearer <user2_token>
+  {
+    "token": "<invitation_token>"
+  }
+  Returns couple_id - they're now linked!
+
+  6. Either user can get partner info
+
+  GET /api/v1/couples/partner
+  Authorization: Bearer <either_token>
+
+
+How to connect calendar":
+  // 1. Check calendar status on page load
+  const status = await fetch('/api/v1/auth/calendar-status', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }).then(r => r.json());
+
+  // 2. Show UI based on status
+  if (!status.user_connected) {
+    showButton('Connect Your Calendar', '/api/v1/auth/google/login');
+  }
+
+  if (!status.partner_connected && status.partner_email) {
+    showMessage(`Waiting for ${status.partner_email} to connect their calendar`);
+  }
+
+  // 3. Enable/disable Generate Date button
+  generateButton.disabled = !status.both_connected;
+
+  // 4. Handle 428 errors gracefully
+  try {
+    await generateDate();
+  } catch (error) {
+    if (error.status === 428) {
+      // Calendar not connected - redirect to connect
+      window.location.href = '/api/v1/auth/google/login';
+    }
+  }

@@ -20,4 +20,11 @@ __pycache__/
 .ipynb_checkpoints/
 /notebooks/claude_test.ipynb.log # If a logging file is created
 
-  
+# 4. Editor/IDE specific
+.vscode/
+.idea/
+
+# 5. Build artifacts
+build/
+dist/
+*.egg-info/
