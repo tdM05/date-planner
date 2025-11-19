@@ -1,0 +1,138 @@
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAuthStore, useCoupleStore } from '../store';
+import {
+  WelcomeScreen,
+  LoginScreen,
+  RegisterScreen,
+  GoogleOAuthScreen,
+  HomeScreen,
+  InvitePartnerScreen,
+  AcceptInvitationScreen,
+  DateGeneratorScreen,
+  ResultsScreen,
+  SettingsScreen,
+} from '../screens';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+
+const Stack = createNativeStackNavigator();
+
+export const AppNavigator: React.FC = () => {
+  const { isAuthenticated, isLoading, loadStoredAuth } = useAuthStore();
+  const { reset: resetCouple } = useCoupleStore();
+
+  // Load stored authentication on app start
+  useEffect(() => {
+    loadStoredAuth();
+  }, []);
+
+  // Reset couple store on logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      resetCouple();
+    }
+  }, [isAuthenticated]);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return <LoadingSpinner message="Loading..." />;
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#6200ee',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      >
+        {!isAuthenticated ? (
+          // Auth Stack - Not logged in
+          <>
+            <Stack.Screen
+              name="Welcome"
+              component={WelcomeScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ title: 'Sign In' }}
+            />
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{ title: 'Create Account' }}
+            />
+            <Stack.Screen
+              name="GoogleOAuth"
+              component={GoogleOAuthScreen}
+              options={{ title: 'Sign in with Google' }}
+            />
+          </>
+        ) : (
+          // Main Stack - Logged in
+          <>
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{
+                title: 'Date Planner',
+                headerRight: () => (
+                  <SettingsHeaderButton />
+                ),
+              }}
+            />
+            <Stack.Screen
+              name="InvitePartner"
+              component={InvitePartnerScreen}
+              options={{ title: 'Invite Partner' }}
+            />
+            <Stack.Screen
+              name="AcceptInvitation"
+              component={AcceptInvitationScreen}
+              options={{ title: 'Accept Invitation' }}
+            />
+            <Stack.Screen
+              name="DateGenerator"
+              component={DateGeneratorScreen}
+              options={{ title: 'Plan a Date' }}
+            />
+            <Stack.Screen
+              name="Results"
+              component={ResultsScreen}
+              options={{ title: 'Date Suggestions' }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{ title: 'Settings' }}
+            />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+// Settings button component for header
+const SettingsHeaderButton: React.FC = () => {
+  const { IconButton } = require('react-native-paper');
+  const { useNavigation } = require('@react-navigation/native');
+  const navigation = useNavigation();
+
+  return (
+    <IconButton
+      icon="cog"
+      iconColor="#fff"
+      size={24}
+      onPress={() => navigation.navigate('Settings')}
+    />
+  );
+};
