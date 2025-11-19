@@ -263,11 +263,15 @@ class AuthService(AbstractService):
 
     def _hash_password(self, password: str) -> str:
         """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
+        # Truncate password to 72 bytes (bcrypt limitation) as defensive measure
+        password_truncated = password[:72]
+        return pwd_context.hash(password_truncated)
 
     def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
-        return pwd_context.verify(plain_password, hashed_password)
+        # Truncate password to 72 bytes for consistency with hashing
+        password_truncated = plain_password[:72]
+        return pwd_context.verify(password_truncated, hashed_password)
 
     def register_user(self, request: RegisterRequest) -> LoginResponse:
         """
