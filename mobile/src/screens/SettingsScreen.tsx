@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { Text, List, Button, Divider, Snackbar } from 'react-native-paper';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
@@ -26,10 +26,21 @@ export const SettingsScreen: React.FC = () => {
     try {
       setIsConnectingCalendar(true);
 
-      // Get OAuth URL with user_id for existing users
-      const authUrl = await authAPI.getGoogleAuthUrl(user.id);
+      const platform = Platform.OS === 'web' ? 'web' : 'mobile';
+      console.log('[Settings] Connecting calendar for platform:', platform);
 
-      // Open browser for OAuth
+      // Get OAuth URL with user_id for existing users and platform
+      const authUrl = await authAPI.getGoogleAuthUrl(user.id, platform);
+      console.log('[Settings] Got OAuth URL:', authUrl);
+
+      if (Platform.OS === 'web') {
+        // On web, redirect to the OAuth URL directly
+        console.log('[Settings] Redirecting to OAuth URL on web...');
+        window.location.href = authUrl;
+        return;
+      }
+
+      // On mobile, open browser for OAuth
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
         'dateplanner://oauth/callback'
@@ -47,22 +58,29 @@ export const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            // Navigation will happen automatically
-          },
-        },
-      ]
-    );
+  const handleLogout = async () => {
+    console.log('[Settings] Logout button clicked');
+
+    // Web-compatible confirmation
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Are you sure you want to logout?')
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Logout', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (confirmed) {
+      console.log('[Settings] User confirmed logout');
+      await logout();
+      console.log('[Settings] Logout complete');
+      // Navigation will happen automatically
+    }
   };
 
   return (
@@ -100,13 +118,13 @@ export const SettingsScreen: React.FC = () => {
         <List.Item
           title="Your Calendar"
           description={
-            calendarStatus?.user_calendar_connected
+            calendarStatus?.user_connected
               ? 'Connected'
               : 'Not connected'
           }
           left={(props) => <List.Icon {...props} icon="calendar" />}
           right={(props) =>
-            calendarStatus?.user_calendar_connected ? (
+            calendarStatus?.user_connected ? (
               <List.Icon {...props} icon="check-circle" color="#4CAF50" />
             ) : (
               <List.Icon {...props} icon="alert-circle" color="#FF9800" />
@@ -118,13 +136,13 @@ export const SettingsScreen: React.FC = () => {
           <List.Item
             title="Partner's Calendar"
             description={
-              calendarStatus?.partner_calendar_connected
+              calendarStatus?.partner_connected
                 ? 'Connected'
                 : 'Not connected'
             }
             left={(props) => <List.Icon {...props} icon="calendar-heart" />}
             right={(props) =>
-              calendarStatus?.partner_calendar_connected ? (
+              calendarStatus?.partner_connected ? (
                 <List.Icon {...props} icon="check-circle" color="#4CAF50" />
               ) : (
                 <List.Icon {...props} icon="alert-circle" color="#FF9800" />
@@ -133,7 +151,7 @@ export const SettingsScreen: React.FC = () => {
           />
         )}
 
-        {!calendarStatus?.user_calendar_connected && (
+        {!calendarStatus?.user_connected && (
           <View style={styles.buttonContainer}>
             <Button
               mode="contained"

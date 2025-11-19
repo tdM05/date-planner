@@ -43,9 +43,13 @@ export const authAPI = {
   /**
    * Initiate Google OAuth login
    * @param existingUserId - Optional user ID for existing users wanting to connect calendar
+   * @param platform - Platform type: 'web' or 'mobile' (defaults to 'web')
    */
-  getGoogleAuthUrl: async (existingUserId?: string): Promise<string> => {
-    const params = existingUserId ? { user_id: existingUserId } : {};
+  getGoogleAuthUrl: async (existingUserId?: string, platform: 'web' | 'mobile' = 'web'): Promise<string> => {
+    const params: any = { platform };
+    if (existingUserId) {
+      params.user_id = existingUserId;
+    }
     const response = await apiClient.get<GoogleOAuthResponse>(
       ENDPOINTS.AUTH_GOOGLE_LOGIN,
       { params }

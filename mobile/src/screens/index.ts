@@ -2,6 +2,7 @@ export { WelcomeScreen } from './WelcomeScreen';
 export { LoginScreen } from './LoginScreen';
 export { RegisterScreen } from './RegisterScreen';
 export { GoogleOAuthScreen } from './GoogleOAuthScreen';
+export { OAuthCallbackScreen } from './OAuthCallbackScreen';
 export { HomeScreen } from './HomeScreen';
 export { InvitePartnerScreen } from './InvitePartnerScreen';
 export { AcceptInvitationScreen } from './AcceptInvitationScreen';

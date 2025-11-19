@@ -30,7 +30,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://172.26.240.1:8000"
+      "apiUrl": "https://date-planner-production.up.railway.app"
     }
   }
 }

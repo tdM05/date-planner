@@ -7,6 +7,7 @@ import {
   LoginScreen,
   RegisterScreen,
   GoogleOAuthScreen,
+  OAuthCallbackScreen,
   HomeScreen,
   InvitePartnerScreen,
   AcceptInvitationScreen,
@@ -75,6 +76,11 @@ export const AppNavigator: React.FC = () => {
               component={GoogleOAuthScreen}
               options={{ title: 'Sign in with Google' }}
             />
+            <Stack.Screen
+              name="OAuthCallback"
+              component={OAuthCallbackScreen}
+              options={{ headerShown: false }}
+            />
           </>
         ) : (
           // Main Stack - Logged in
@@ -113,6 +119,11 @@ export const AppNavigator: React.FC = () => {
               name="Settings"
               component={SettingsScreen}
               options={{ title: 'Settings' }}
+            />
+            <Stack.Screen
+              name="OAuthCallback"
+              component={OAuthCallbackScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}

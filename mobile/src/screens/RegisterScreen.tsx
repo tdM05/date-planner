@@ -25,7 +25,7 @@ export const RegisterScreen: React.FC = () => {
     }
   };
 
-  const isFormValid = fullName.trim() && email.trim() && password.length >= 6;
+  const isFormValid = fullName.trim() && email.trim() && password.length >= 8 && password.length <= 72;
 
   return (
     <KeyboardAvoidingView
@@ -76,8 +76,11 @@ export const RegisterScreen: React.FC = () => {
           disabled={isLoading}
         />
 
-        {password && password.length < 6 && (
-          <Text style={styles.hint}>Password must be at least 6 characters</Text>
+        {password && password.length < 8 && (
+          <Text style={styles.hint}>Password must be at least 8 characters</Text>
+        )}
+        {password && password.length > 72 && (
+          <Text style={styles.hint}>Password must be 72 characters or less</Text>
         )}
 
         <Button

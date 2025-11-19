@@ -96,25 +96,25 @@ export const HomeScreen: React.FC = () => {
                 <Text>Your Calendar:</Text>
                 <Chip
                   mode="outlined"
-                  selected={!!calendarStatus?.user_calendar_connected}
+                  selected={!!calendarStatus?.user_connected}
                   style={styles.chip}
                 >
-                  {calendarStatus?.user_calendar_connected ? 'Connected' : 'Not Connected'}
+                  {calendarStatus?.user_connected ? 'Connected' : 'Not Connected'}
                 </Chip>
               </View>
               <View style={styles.statusRow}>
                 <Text>Partner's Calendar:</Text>
                 <Chip
                   mode="outlined"
-                  selected={!!calendarStatus?.partner_calendar_connected}
+                  selected={!!calendarStatus?.partner_connected}
                   style={styles.chip}
                 >
-                  {calendarStatus?.partner_calendar_connected ? 'Connected' : 'Not Connected'}
+                  {calendarStatus?.partner_connected ? 'Connected' : 'Not Connected'}
                 </Chip>
               </View>
             </Card.Content>
-            {(!calendarStatus?.user_calendar_connected ||
-              !calendarStatus?.partner_calendar_connected) && (
+            {(!calendarStatus?.user_connected ||
+              !calendarStatus?.partner_connected) && (
               <Card.Actions>
                 <Button
                   mode="text"
@@ -143,8 +143,8 @@ export const HomeScreen: React.FC = () => {
                 icon="heart"
                 style={styles.planButton}
                 disabled={
-                  !calendarStatus?.user_calendar_connected ||
-                  !calendarStatus?.partner_calendar_connected
+                  !calendarStatus?.user_connected ||
+                  !calendarStatus?.partner_connected
                 }
               >
                 Plan a Date
@@ -152,8 +152,8 @@ export const HomeScreen: React.FC = () => {
             </Card.Actions>
           </Card>
 
-          {(!calendarStatus?.user_calendar_connected ||
-            !calendarStatus?.partner_calendar_connected) && (
+          {(!calendarStatus?.user_connected ||
+            !calendarStatus?.partner_connected) && (
             <Text variant="bodySmall" style={styles.hint}>
               Both partners need to connect their calendars to generate date plans.
             </Text>

@@ -33,17 +33,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Login
   login: async (credentials: LoginRequest) => {
     try {
+      console.log('[AuthStore] Login attempt:', { email: credentials.email });
       set({ isLoading: true, error: null });
       const response = await authAPI.login(credentials);
+      console.log('[AuthStore] Login response:', response);
       const token = response.access_token;
 
       // Store token
       await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       set({ token, isAuthenticated: true });
+      console.log('[AuthStore] Token stored, fetching user...');
 
       // Fetch user data
       await get().fetchUser();
+      console.log('[AuthStore] Login successful');
     } catch (error: any) {
+      console.error('[AuthStore] Login failed:', error);
       set({ error: error.message || 'Login failed', isAuthenticated: false });
       throw error;
     } finally {
@@ -54,17 +59,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Register
   register: async (data: RegisterRequest) => {
     try {
+      console.log('[AuthStore] Register attempt:', { email: data.email, full_name: data.full_name });
       set({ isLoading: true, error: null });
       const response = await authAPI.register(data);
+      console.log('[AuthStore] Register response:', response);
       const token = response.access_token;
 
       // Store token
       await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       set({ token, isAuthenticated: true });
+      console.log('[AuthStore] Token stored, fetching user...');
 
       // Fetch user data
       await get().fetchUser();
+      console.log('[AuthStore] Registration successful');
     } catch (error: any) {
+      console.error('[AuthStore] Registration failed:', error);
       set({ error: error.message || 'Registration failed', isAuthenticated: false });
       throw error;
     } finally {
@@ -94,18 +104,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Load stored authentication
   loadStoredAuth: async () => {
     try {
+      console.log('[AuthStore] Loading stored auth...');
       set({ isLoading: true });
       const token = await AsyncStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
 
       if (token) {
+        console.log('[AuthStore] Found stored token, verifying...');
         set({ token, isAuthenticated: true });
         await get().fetchUser();
+      } else {
+        console.log('[AuthStore] No stored token found');
       }
     } catch (error: any) {
-      console.error('Load stored auth error:', error);
+      console.error('[AuthStore] Load stored auth error:', error);
       set({ isAuthenticated: false });
     } finally {
       set({ isLoading: false });
+      console.log('[AuthStore] Load stored auth complete');
     }
   },
 
@@ -124,11 +139,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Fetch user data
   fetchUser: async () => {
     try {
+      console.log('[AuthStore] Fetching user data...');
       const user = await authAPI.getMe();
+      console.log('[AuthStore] User data received:', user);
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
       set({ user });
+      console.log('[AuthStore] User data stored');
     } catch (error: any) {
-      console.error('Fetch user error:', error);
+      console.error('[AuthStore] Fetch user error:', error);
       // If fetching user fails, clear auth
       await get().logout();
       throw error;

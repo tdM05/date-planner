@@ -29,9 +29,10 @@ export interface GoogleOAuthResponse {
 }
 
 export interface CalendarStatus {
-  user_calendar_connected: boolean;
-  partner_calendar_connected: boolean | null;
-  has_partner: boolean;
+  user_connected: boolean;
+  partner_connected: boolean;
+  both_connected: boolean;
+  partner_email?: string;
 }
 
 // Couples types
