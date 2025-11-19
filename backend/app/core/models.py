@@ -90,7 +90,7 @@ class LoginResponse(BaseModel):
 
 class GoogleAuthURL(BaseModel):
     """Response containing Google OAuth URL"""
-    auth_url: str
+    authorization_url: str
 
 
 class CalendarStatusResponse(BaseModel):

@@ -42,19 +42,20 @@ export const authAPI = {
 
   /**
    * Initiate Google OAuth login
-   * @param existingUserId - Optional user ID for existing users wanting to connect calendar
    * @param platform - Platform type: 'web' or 'mobile' (defaults to 'web')
    */
-  getGoogleAuthUrl: async (existingUserId?: string, platform: 'web' | 'mobile' = 'web'): Promise<string> => {
-    const params: any = { platform };
-    if (existingUserId) {
-      params.user_id = existingUserId;
-    }
+  getGoogleAuthUrl: async (platform: 'web' | 'mobile' = 'web'): Promise<string> => {
     const response = await apiClient.get<GoogleOAuthResponse>(
       ENDPOINTS.AUTH_GOOGLE_LOGIN,
-      { params }
+      { params: { platform } }
     );
-    return response.data.authorization_url;
+
+    const authUrl = response.data.authorization_url;
+    if (!authUrl) {
+      throw new Error('No authorization URL received from server');
+    }
+
+    return authUrl;
   },
 
   /**

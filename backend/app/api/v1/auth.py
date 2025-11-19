@@ -43,7 +43,7 @@ def initiate_google_login(
         state = platform
 
     auth_url = auth_service.get_google_auth_url(state=state)
-    return GoogleAuthURL(auth_url=auth_url)
+    return GoogleAuthURL(authorization_url=auth_url)
 
 
 @router.get("/google/callback")

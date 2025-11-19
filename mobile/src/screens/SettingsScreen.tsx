@@ -29,8 +29,8 @@ export const SettingsScreen: React.FC = () => {
       const platform = Platform.OS === 'web' ? 'web' : 'mobile';
       console.log('[Settings] Connecting calendar for platform:', platform);
 
-      // Get OAuth URL with user_id for existing users and platform
-      const authUrl = await authAPI.getGoogleAuthUrl(user.id, platform);
+      // Get OAuth URL for calendar connection (backend uses JWT to identify user)
+      const authUrl = await authAPI.getGoogleAuthUrl(platform);
       console.log('[Settings] Got OAuth URL:', authUrl);
 
       if (Platform.OS === 'web') {

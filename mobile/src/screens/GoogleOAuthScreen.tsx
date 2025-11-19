@@ -25,7 +25,7 @@ export const GoogleOAuthScreen: React.FC = () => {
       console.log('[GoogleOAuth] Starting OAuth flow for platform:', platform);
 
       // Get the Google OAuth URL from backend with platform parameter
-      const authUrl = await authAPI.getGoogleAuthUrl(undefined, platform);
+      const authUrl = await authAPI.getGoogleAuthUrl(platform);
       console.log('[GoogleOAuth] Got auth URL:', authUrl);
 
       if (Platform.OS === 'web') {
