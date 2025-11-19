@@ -16,6 +16,7 @@ router = APIRouter()
 
 @router.get("/google/login", response_model=GoogleAuthURL)
 def initiate_google_login(
+    platform: str = Query("mobile", description="Platform: 'web' or 'mobile'"),
     current_user: Optional[User] = Depends(get_current_user_optional),
     auth_service: AuthService = Depends(get_auth_service)
 ):
@@ -27,11 +28,19 @@ def initiate_google_login(
 
     If user is already logged in (has JWT), their user ID is embedded in the state
     parameter so the callback knows to update their existing account.
+
+    Args:
+        platform: 'web' or 'mobile' to determine redirect URL in callback
+        current_user: Optional current user (if connecting calendar)
+
+    Returns:
+        GoogleAuthURL with the OAuth URL to redirect to
     """
-    # If user is logged in, pass their ID in the state parameter
-    state = None
+    # Build state parameter with platform and optionally user_id
     if current_user:
-        state = f"user_id:{current_user.id}"
+        state = f"{platform}:user_id:{current_user.id}"
+    else:
+        state = platform
 
     auth_url = auth_service.get_google_auth_url(state=state)
     return GoogleAuthURL(auth_url=auth_url)
@@ -50,30 +59,51 @@ def google_callback(
     1. New user registration: No state or random state → Creates new user account
     2. Connect calendar: state contains "user_id:xxx" → Updates existing user's google_refresh_token
 
+    State parameter format:
+    - "web" or "mobile" for platform indication
+    - "web:user_id:xxx" for existing web user connecting calendar
+    - "mobile:user_id:xxx" for existing mobile user connecting calendar
+
     Args:
         code: Authorization code from Google OAuth flow
-        state: Optional state parameter that may contain user_id for existing users
+        state: Optional state parameter that may contain platform and user_id
 
     Returns:
-        - If new user: LoginResponse with JWT token and user information
-        - If existing user: Success message about calendar connection
+        RedirectResponse to app with token in URL
     """
     try:
-        # Check if state contains a user_id (existing user linking calendar)
+        # Parse state parameter
+        platform = "mobile"  # Default to mobile for backward compatibility
         current_user = None
-        if state and state.startswith("user_id:"):
-            user_id_str = state.replace("user_id:", "")
-            from uuid import UUID
-            user_id = UUID(user_id_str)
-            current_user = auth_service.get_user_by_id(user_id)
 
+        if state:
+            parts = state.split(":")
+            if len(parts) >= 1:
+                platform = parts[0] if parts[0] in ["web", "mobile"] else "mobile"
+            if len(parts) >= 3 and parts[1] == "user_id":
+                # Existing user connecting calendar
+                from uuid import UUID
+                user_id = UUID(parts[2])
+                current_user = auth_service.get_user_by_id(user_id)
+
+        # Handle OAuth callback
         result = auth_service.handle_oauth_callback(code, current_user)
-        return result
+
+        # Determine redirect URL based on platform
+        if isinstance(result, dict):
+            # Existing user connecting calendar - redirect back to app
+            redirect_url = "dateplanner://oauth/callback?success=true" if platform == "mobile" else "http://localhost:8081/oauth/callback?success=true"
+        else:
+            # New user - include token
+            token = result.access_token
+            redirect_url = f"dateplanner://oauth/callback?token={token}" if platform == "mobile" else f"http://localhost:8081/oauth/callback?token={token}"
+
+        return RedirectResponse(url=redirect_url)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to authenticate with Google: {str(e)}"
-        )
+        # Redirect to error page
+        error_msg = str(e).replace(" ", "+")
+        redirect_url = f"dateplanner://oauth/callback?error={error_msg}" if platform == "mobile" else f"http://localhost:8081/oauth/callback?error={error_msg}"
+        return RedirectResponse(url=redirect_url)
 
 
 @router.get("/me", response_model=UserResponse)
