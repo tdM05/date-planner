@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text } from 'react-native-paper';
+import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const OAuthCallbackScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -57,20 +55,23 @@ export const OAuthCallbackScreen: React.FC = () => {
   if (error) {
     return (
       <View style={styles.container}>
-        <Text variant="headlineMedium" style={styles.errorText}>
-          Authentication Failed
-        </Text>
-        <Text variant="bodyMedium" style={styles.errorDetail}>
-          {error}
-        </Text>
-        <Text variant="bodySmall" style={styles.redirectText}>
-          Redirecting...
-        </Text>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Authentication Failed</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <Text style={styles.errorHint}>Redirecting back...</Text>
+        </View>
       </View>
     );
   }
 
-  return <LoadingSpinner message="Completing authentication..." />;
+  return (
+    <View style={styles.container}>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#EC4899" />
+        <Text style={styles.loadingText}>Completing authentication...</Text>
+      </View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -78,20 +79,41 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5E6F8',
     padding: 20,
-    backgroundColor: '#fff',
   },
-  errorText: {
-    color: '#d32f2f',
-    marginBottom: 16,
+  loadingContainer: {
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 16,
+    maxWidth: 300,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#DC2626',
+    marginBottom: 12,
     textAlign: 'center',
   },
-  errorDetail: {
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
     marginBottom: 8,
     textAlign: 'center',
   },
-  redirectText: {
-    marginTop: 16,
-    color: '#666',
+  errorHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });
