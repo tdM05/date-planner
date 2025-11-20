@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Text, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, Platform, Text, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../store';
 import { authAPI } from '../api';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useNavigation } from '@react-navigation/native';
 
 // Important: Tell WebBrowser to handle OAuth redirects
@@ -80,25 +78,23 @@ export const GoogleOAuthScreen: React.FC = () => {
   if (error) {
     return (
       <View style={styles.container}>
-        <Text variant="bodyLarge" style={styles.errorText}>
-          Authentication failed
-        </Text>
-        <Text variant="bodyMedium">{error}</Text>
-        <Snackbar
-          visible={!!error}
-          onDismiss={() => {
-            setError(null);
-            navigation.goBack();
-          }}
-          duration={3000}
-        >
-          {error}
-        </Snackbar>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Authentication Failed</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <Text style={styles.errorHint}>Please try again or go back</Text>
+        </View>
       </View>
     );
   }
 
-  return <LoadingSpinner message="Authenticating with Google..." />;
+  return (
+    <View style={styles.container}>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#EC4899" />
+        <Text style={styles.loadingText}>Authenticating with Google...</Text>
+      </View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -106,10 +102,41 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5E6F8',
     padding: 20,
   },
-  errorText: {
+  loadingContainer: {
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 16,
+    maxWidth: 300,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#DC2626',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
     marginBottom: 8,
-    color: '#d32f2f',
+    textAlign: 'center',
+  },
+  errorHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

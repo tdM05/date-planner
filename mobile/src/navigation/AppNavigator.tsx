@@ -74,7 +74,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen
               name="GoogleOAuth"
               component={GoogleOAuthScreen}
-              options={{ title: 'Sign in with Google' }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="OAuthCallback"
