@@ -64,12 +64,12 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen
               name="Login"
               component={LoginScreen}
-              options={{ title: 'Sign In' }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="Register"
               component={RegisterScreen}
-              options={{ title: 'Create Account' }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="GoogleOAuth"
