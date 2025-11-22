@@ -126,12 +126,21 @@ export const HomeScreen: React.FC = () => {
  
              <TouchableOpacity
                style={[styles.quickActionCard, styles.scheduleCard]}
-               onPress={() => navigation.navigate('Profile')}
+               onPress={() => {
+                 // If calendar connected, go to Schedule. Otherwise go to Profile to sync
+                 if (calendarStatus?.user_connected) {
+                   navigation.navigate('Schedule');
+                 } else {
+                   navigation.navigate('Profile');
+                 }
+               }}
                activeOpacity={0.7}
              >
                <Text style={styles.quickActionIcon}>📅</Text>
                <Text style={styles.quickActionTitle}>Calendar</Text>
-               <Text style={styles.quickActionSubtitle}>Sync now</Text>
+               <Text style={styles.quickActionSubtitle}>
+                 {calendarStatus?.user_connected ? 'View schedule' : 'Sync now'}
+               </Text>
              </TouchableOpacity>
            </View>
          </>
@@ -195,12 +204,21 @@ export const HomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={[styles.quickActionCard, styles.scheduleCard]}
-              onPress={() => navigation.navigate('Profile')}
+              onPress={() => {
+                // If calendar connected, go to Schedule. Otherwise go to Profile to sync
+                if (calendarStatus?.user_connected) {
+                  navigation.navigate('Schedule');
+                } else {
+                  navigation.navigate('Profile');
+                }
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.quickActionIcon}>📅</Text>
               <Text style={styles.quickActionTitle}>Calendar</Text>
-              <Text style={styles.quickActionSubtitle}>Sync now</Text>
+              <Text style={styles.quickActionSubtitle}>
+                {calendarStatus?.user_connected ? 'View schedule' : 'Sync now'}
+              </Text>
             </TouchableOpacity>
           </View>
 
