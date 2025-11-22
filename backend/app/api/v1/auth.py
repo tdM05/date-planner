@@ -179,7 +179,7 @@ def google_callback(
             base_url = custom_redirect_url
         elif platform == "mobile":
             # Default mobile deep link
-            base_url = "dateplanner://"
+            base_url = "dateplanner:"
         else:
             # Fallback to localhost for web
             base_url = "http://localhost:8081"
@@ -204,7 +204,7 @@ def google_callback(
         if custom_redirect_url:
             base_url = custom_redirect_url
         elif platform == "mobile":
-            base_url = "dateplanner://"
+            base_url = "dateplanner:"
         else:
             base_url = "http://localhost:8081"
 
