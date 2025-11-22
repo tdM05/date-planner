@@ -40,6 +40,10 @@ def validate_redirect_url(url: str) -> bool:
         if parsed.scheme == 'dateplanner':
             return True
 
+        # Allow Expo development URLs in development mode
+        if settings.is_development and parsed.hostname and parsed.hostname.endswith('.exp.direct'):
+            return True
+
         # Allow HTTPS URLs from trusted domains
         # Add your production domain here when you deploy frontend
         allowed_domains = [

@@ -84,11 +84,14 @@ class DateGeneratorService(AbstractService):
             ValueError: If user is not in a couple or calendar access fails
         """
         # Check if user has connected their Google Calendar
-        user_result = self.db.table('users').select('google_refresh_token').eq('id', str(user_id)).execute()
+        user_result = self.db.table('users').select('google_refresh_token', 'full_name').eq('id', str(user_id)).execute()
         if not user_result.data or not user_result.data[0].get('google_refresh_token'):
             raise ValueError(
                 "Calendar not connected. Please connect your Google Calendar first by visiting /api/v1/auth/google/login"
             )
+
+        # Get user's name with fallback
+        user1_name = user_result.data[0].get('full_name') or 'Partner 1'
 
         # Get user's couple relationship
         couple = get_user_couple(user_id)
@@ -101,15 +104,22 @@ class DateGeneratorService(AbstractService):
 
         # Get partner's ID using helper function
         partner_id = get_partner_id(user_id, couple)
-        partner_result = self.db.table('users').select('google_refresh_token').eq('id', str(partner_id)).execute()
+        partner_result = self.db.table('users').select('google_refresh_token', 'full_name').eq('id', str(partner_id)).execute()
         if not partner_result.data or not partner_result.data[0].get('google_refresh_token'):
             raise ValueError(
                 "Your partner has not connected their Google Calendar yet. Both partners need to connect their calendars."
             )
 
+        # Get partner's name with fallback
+        user2_name = partner_result.data[0].get('full_name') or 'Partner 2'
+
         # Use provided date range from request
         time_frame_start = request.start_date
         time_frame_end = request.end_date
+
+        # DEBUG: Log received date range
+        print(f"DEBUG: Date range requested: {request.start_date} to {request.end_date}")
+        print(f"DEBUG: Timezone-aware dates: {time_frame_start} to {time_frame_end}")
 
         # Validate date range
         if time_frame_end <= time_frame_start:
@@ -123,6 +133,12 @@ class DateGeneratorService(AbstractService):
             time_frame_end=time_frame_end,
             slot_duration_hours=2.0,
         )
+
+        # DEBUG: Log free slots found
+        print(f"DEBUG: Found {len(free_slots)} free slots")
+        if free_slots:
+            print(f"DEBUG: First slot: {free_slots[0]['start']}")
+            print(f"DEBUG: Last slot: {free_slots[-1]['start']}")
 
         if not free_slots:
             raise ValueError("No mutual free time found in the specified time frame")
@@ -153,10 +169,10 @@ Weather Forecast: {weather_info['forecast']}
 Available Free Time Slots:
 {free_slots_summary}
 
-Partner 1's Schedule Context:
+{user1_name}'s Schedule Context:
 {user1_context}
 
-Partner 2's Schedule Context:
+{user2_name}'s Schedule Context:
 {user2_context}
 
 Please suggest 3 diverse date idea CONCEPTS that:
@@ -174,7 +190,7 @@ Please suggest 3 diverse date idea CONCEPTS that:
             raise ValueError("Claude did not return any date ideas")
 
         # PHASE 2: Collect all venues from Google Places
-        context_summary = f"Partner 1: {user1_context}\nPartner 2: {user2_context}"
+        context_summary = f"{user1_name}: {user1_context}\n{user2_name}: {user2_context}"
         all_venue_options = []
 
         for idea in date_ideas:
@@ -228,10 +244,12 @@ Please suggest 3 diverse date idea CONCEPTS that:
 
             if selected_venue_option:
                 venue = selected_venue_option["venue"]
+                suggested_time = selection["suggested_time"]
+                print(f"DEBUG: Claude selected suggested_time: {suggested_time} for {venue.get('name')}")
                 event = Event(
                     name=venue.get("name", selection["venue_name"]),
                     reason=selection["explanation"],
-                    suggested_time=selection["suggested_time"],
+                    suggested_time=suggested_time,
                 )
                 events.append(event)
 

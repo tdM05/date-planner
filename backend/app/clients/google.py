@@ -53,8 +53,28 @@ class RealGoogleClient(AbstractClient):
                 print(f"No results found. Status: {search_results.get('status')}")
                 return []
 
+        except googlemaps.exceptions.ApiError as e:
+            print(f"Google Places API Error - Status: {e.status}, Message: {getattr(e, 'message', 'N/A')}")
+            import traceback
+            traceback.print_exc()
+            return []
+        except googlemaps.exceptions.HTTPError as e:
+            print(f"Google Places HTTP Error - Status Code: {getattr(e, 'status_code', 'N/A')}")
+            import traceback
+            traceback.print_exc()
+            return []
+        except googlemaps.exceptions.TransportError as e:
+            print(f"Google Places Transport Error: {getattr(e, 'base_exception', e)}")
+            import traceback
+            traceback.print_exc()
+            return []
+        except googlemaps.exceptions.Timeout:
+            print("Google Places API request timed out")
+            return []
         except Exception as e:
-            print(f"Error calling Google Places API: {e}")
+            print(f"Unexpected error calling Google Places API: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
 
