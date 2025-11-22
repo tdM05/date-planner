@@ -12,10 +12,26 @@ import { DateGenerationProgress } from '../components/DateGenerationProgress';
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
+// Helper function to get time ago string
+const getTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return format(date, 'MMM d, yyyy');
+};
+
 export const DateGeneratorScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
-  const { generateDatePlan, isGenerating, error, clearError } = useDateStore();
+  const { generateDatePlan, isGenerating, error, clearError, datePlanHistory, datePlan } = useDateStore();
 
   const [prompt, setPrompt] = useState('');
   const [location, setLocation] = useState('');
@@ -42,6 +58,12 @@ export const DateGeneratorScreen: React.FC = () => {
     } catch (err) {
       // Error is handled by the store
     }
+  };
+
+  const handleViewHistory = (historyItem: any) => {
+    // Set this history item as the current date plan and navigate to results
+    useDateStore.setState({ datePlan: historyItem.datePlan });
+    navigation.navigate('Results');
   };
 
   const isFormValid = prompt.trim() && location.trim();
@@ -158,6 +180,46 @@ export const DateGeneratorScreen: React.FC = () => {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {/* History Section */}
+        {datePlanHistory.length > 0 && (
+          <View style={styles.historySection}>
+            <Text style={styles.historyTitle}>Previous Date Ideas</Text>
+            <Text style={styles.historySubtitle}>
+              Tap to view saved date plans
+            </Text>
+
+            {datePlanHistory.map((historyItem, index) => {
+              const timeAgo = getTimeAgo(new Date(historyItem.timestamp));
+              return (
+                <TouchableOpacity
+                  key={historyItem.timestamp}
+                  style={styles.historyCard}
+                  onPress={() => handleViewHistory(historyItem)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.historyCardContent}>
+                    <View style={styles.historyCardHeader}>
+                      <Text style={styles.historyCardTitle}>
+                        {historyItem.request.prompt}
+                      </Text>
+                      <Text style={styles.historyCardBadge}>
+                        {historyItem.datePlan.events.length} options
+                      </Text>
+                    </View>
+                    <Text style={styles.historyCardLocation}>
+                      📍 {historyItem.request.location}
+                    </Text>
+                    <Text style={styles.historyCardTime}>
+                      {timeAgo}
+                    </Text>
+                  </View>
+                  <Text style={styles.historyCardArrow}>›</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       <DateGenerationProgress visible={isGenerating} />
@@ -320,5 +382,76 @@ const styles = StyleSheet.create({
   },
   snackbar: {
     backgroundColor: '#EC4899',
+  },
+  historySection: {
+    marginTop: 32,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  historyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  historySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+  },
+  historyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  historyCardContent: {
+    flex: 1,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  historyCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+    marginRight: 8,
+  },
+  historyCardBadge: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9333EA',
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  historyCardLocation: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  historyCardTime: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  historyCardArrow: {
+    fontSize: 24,
+    color: '#D1D5DB',
+    marginLeft: 8,
   },
 });
