@@ -8,13 +8,13 @@ import {
   RegisterScreen,
   GoogleOAuthScreen,
   OAuthCallbackScreen,
-  HomeScreen,
   InvitePartnerScreen,
   AcceptInvitationScreen,
   DateGeneratorScreen,
   ResultsScreen,
   SettingsScreen,
 } from '../screens';
+import { MainTabNavigator } from './MainTabNavigator';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const Stack = createNativeStackNavigator();
@@ -106,15 +106,11 @@ export const AppNavigator: React.FC = () => {
           // Main Stack - Logged in
           <>
             <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{
-                title: 'Date Planner',
-                headerRight: () => (
-                  <SettingsHeaderButton />
-                ),
-              }}
+              name="MainTabs"
+              component={MainTabNavigator}
+              options={{ headerShown: false }}
             />
+            
             <Stack.Screen
               name="InvitePartner"
               component={InvitePartnerScreen}
@@ -149,21 +145,5 @@ export const AppNavigator: React.FC = () => {
         )}
       </Stack.Navigator>
     </NavigationContainer>
-  );
-};
-
-// Settings button component for header
-const SettingsHeaderButton: React.FC = () => {
-  const { IconButton } = require('react-native-paper');
-  const { useNavigation } = require('@react-navigation/native');
-  const navigation = useNavigation();
-
-  return (
-    <IconButton
-      icon="cog"
-      iconColor="#fff"
-      size={24}
-      onPress={() => navigation.navigate('Settings')}
-    />
   );
 };
