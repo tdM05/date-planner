@@ -124,13 +124,13 @@ export const HomeScreen: React.FC = () => {
                <Text style={styles.quickActionSubtitle}>Set reminders</Text>
              </TouchableOpacity>
  
-             <TouchableOpacity 
-               style={[styles.quickActionCard, styles.scheduleCard]} 
+             <TouchableOpacity
+               style={[styles.quickActionCard, styles.scheduleCard]}
                onPress={() => navigation.navigate('Settings')}
                activeOpacity={0.7}
              >
                <Text style={styles.quickActionIcon}>📅</Text>
-               <Text style={styles.quickActionTitle}>Schedule</Text>
+               <Text style={styles.quickActionTitle}>Calendar</Text>
                <Text style={styles.quickActionSubtitle}>Sync now</Text>
              </TouchableOpacity>
            </View>
@@ -148,7 +148,11 @@ export const HomeScreen: React.FC = () => {
                   ? 'Check your shared schedule for free time'
                   : 'Connect with your partner to see shared free time'}
               </Text>
-              <TouchableOpacity style={styles.outlineButton} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.outlineButton}
+                onPress={() => navigation.navigate('Schedule')}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.outlineButtonText}>View Schedule</Text>
               </TouchableOpacity>
             </View>
@@ -194,7 +198,7 @@ export const HomeScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <Text style={styles.quickActionIcon}>📅</Text>
-              <Text style={styles.quickActionTitle}>Schedule</Text>
+              <Text style={styles.quickActionTitle}>Calendar</Text>
               <Text style={styles.quickActionSubtitle}>Sync now</Text>
             </TouchableOpacity>
           </View>
