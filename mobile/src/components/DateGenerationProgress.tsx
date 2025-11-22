@@ -30,7 +30,7 @@ export const DateGenerationProgress: React.FC<DateGenerationProgressProps> = ({ 
       setProgress((prev) => {
         const targetProgress = STAGES[currentStage].progress;
         if (prev < targetProgress) {
-          return Math.min(prev + 0.01, targetProgress);
+          return Math.min(prev + 0.001, targetProgress);
         }
         return prev;
       });
@@ -44,7 +44,7 @@ export const DateGenerationProgress: React.FC<DateGenerationProgressProps> = ({ 
         }
         return prev;
       });
-    }, 6500);
+    }, 10000);
 
     return () => {
       clearInterval(progressInterval);

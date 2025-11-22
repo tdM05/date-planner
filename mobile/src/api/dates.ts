@@ -10,7 +10,10 @@ export const datesAPI = {
   generateCoupleDatePlan: async (data: DateGenerationRequest): Promise<DatePlanResponse> => {
     const response = await apiClient.post<DatePlanResponse>(
       ENDPOINTS.DATES_GENERATE,
-      data
+      data,
+      {
+        timeout: 90000, // 90 seconds - AI generation can take time
+      }
     );
     return response.data;
   },

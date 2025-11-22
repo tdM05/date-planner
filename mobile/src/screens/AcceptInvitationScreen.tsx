@@ -13,10 +13,10 @@ export const AcceptInvitationScreen: React.FC = () => {
   const handleAccept = async () => {
     try {
       await acceptInvitation(token);
-      // Navigate to Home screen after successful acceptance
+      // Navigate to main tabs after successful acceptance
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Home' as never }],
+        routes: [{ name: 'MainTabs' as never }],
       });
     } catch (err) {
       // Error is handled by the store

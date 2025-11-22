@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Share } from 'react-native';
 import { Text, TextInput, Button, Card, Snackbar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { useCoupleStore } from '../store';
 
 export const InvitePartnerScreen: React.FC = () => {
@@ -9,6 +10,7 @@ export const InvitePartnerScreen: React.FC = () => {
   const { invitePartner, invitation, isLoading, error, clearError } = useCoupleStore();
 
   const [email, setEmail] = useState('');
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   const handleInvite = async () => {
     try {
@@ -33,9 +35,13 @@ export const InvitePartnerScreen: React.FC = () => {
 
   const handleCopyCode = async () => {
     if (!invitation) return;
-    // In a real app, you'd use Clipboard API
-    // For now, we'll just show a snackbar
-    alert(`Code copied: ${invitation.token}`);
+    try {
+      await Clipboard.setStringAsync(invitation.token);
+      setCopyMessage('💕 Code copied to clipboard!');
+    } catch (error) {
+      console.error('Copy error:', error);
+      setCopyMessage('Failed to copy code');
+    }
   };
 
   return (
@@ -111,11 +117,14 @@ export const InvitePartnerScreen: React.FC = () => {
       )}
 
       <Snackbar
-        visible={!!error}
-        onDismiss={clearError}
+        visible={!!error || !!copyMessage}
+        onDismiss={() => {
+          clearError();
+          setCopyMessage(null);
+        }}
         duration={3000}
       >
-        {error || ''}
+        {error || copyMessage || ''}
       </Snackbar>
     </ScrollView>
   );
