@@ -43,6 +43,7 @@ class Event(BaseModel):
     name: str
     reason: str
     suggested_time: Optional[str] = None
+    address: Optional[str] = None
 
 
 class DatePlanResponse(BaseModel):

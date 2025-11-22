@@ -61,6 +61,7 @@ class DateGeneratorService(AbstractService):
             event = Event(
                 name=place.get("name", "Unknown Place"),
                 reason=f"A great place for '{idea}'.",
+                address=place.get("address"),
             )
             events.append(event)
 
@@ -251,6 +252,7 @@ Please suggest 3 diverse date idea CONCEPTS that:
                     name=venue.get("name", selection["venue_name"]),
                     reason=selection["explanation"],
                     suggested_time=suggested_time,
+                    address=venue.get("address"),
                 )
                 events.append(event)
 
