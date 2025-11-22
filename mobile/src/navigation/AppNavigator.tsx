@@ -8,11 +8,8 @@ import {
   RegisterScreen,
   GoogleOAuthScreen,
   OAuthCallbackScreen,
-  InvitePartnerScreen,
-  AcceptInvitationScreen,
   DateGeneratorScreen,
   ResultsScreen,
-  SettingsScreen,
 } from '../screens';
 import { MainTabNavigator } from './MainTabNavigator';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -94,11 +91,6 @@ export const AppNavigator: React.FC = () => {
               name="Results"
               component={ResultsScreen}
               options={{ title: 'Date Suggestions' }}
-            />
-            <Stack.Screen
-              name="Settings"
-              component={SettingsScreen}
-              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="OAuthCallback"
