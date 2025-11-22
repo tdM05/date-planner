@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
-import { Text, TextInput, Button, Snackbar, Card } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Text, TextInput as RNTextInput } from 'react-native';
+import { Snackbar, Card } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDateStore } from '../store';
 import { format } from 'date-fns';
 import { DatePickerModal } from '../components/DatePickerModal';
@@ -12,6 +14,7 @@ type NavigationProp = NativeStackNavigationProp<any>;
 
 export const DateGeneratorScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { generateDatePlan, isGenerating, error, clearError } = useDateStore();
 
   const [prompt, setPrompt] = useState('');
@@ -48,95 +51,113 @@ export const DateGeneratorScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text variant="headlineSmall" style={styles.title}>
-          Plan Your Date
+      {/* Header Section */}
+      <LinearGradient
+        colors={['#F9A8D4', '#F5E6F8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 20 }]}
+      >
+        <Text style={styles.headerTitle}>Plan Your Date</Text>
+        <Text style={styles.headerSubtitle}>
+          Tell us what you'd like and we'll find perfect options
         </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Tell us what kind of date you'd like, and we'll find the perfect options based on your schedules.
-        </Text>
+      </LinearGradient>
 
-        <TextInput
-          label="What kind of date?"
-          value={prompt}
-          onChangeText={setPrompt}
-          mode="outlined"
-          placeholder="e.g., cozy italian restaurant, outdoor adventure, movie night"
-          multiline
-          numberOfLines={3}
-          style={styles.input}
-          disabled={isGenerating}
-        />
-
-        <TextInput
-          label="Location"
-          value={location}
-          onChangeText={setLocation}
-          mode="outlined"
-          placeholder="e.g., New York, NY"
-          style={styles.input}
-          disabled={isGenerating}
-        />
-
-        <Text variant="titleSmall" style={styles.sectionTitle}>
-          Date Range
-        </Text>
-        <Text variant="bodySmall" style={styles.hint}>
-          We'll find free time in your calendars during this period
-        </Text>
-
-        <View style={styles.dateRow}>
-          <TouchableOpacity
-            style={styles.dateCard}
-            onPress={() => setShowStartDatePicker(true)}
-            disabled={isGenerating}
-          >
-            <Card style={styles.dateCardInner}>
-              <Card.Content>
-                <View style={styles.dateCardContent}>
-                  <Text variant="labelSmall" style={styles.dateLabel}>Start Date</Text>
-                  <Text variant="bodySmall" style={styles.dateIcon}>💕</Text>
-                </View>
-                <Text variant="titleMedium" style={styles.dateValue}>
-                  {format(startDate, 'MMM d, yyyy')}
-                </Text>
-              </Card.Content>
-            </Card>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.dateCard}
-            onPress={() => setShowEndDatePicker(true)}
-            disabled={isGenerating}
-          >
-            <Card style={styles.dateCardInner}>
-              <Card.Content>
-                <View style={styles.dateCardContent}>
-                  <Text variant="labelSmall" style={styles.dateLabel}>End Date</Text>
-                  <Text variant="bodySmall" style={styles.dateIcon}>💕</Text>
-                </View>
-                <Text variant="titleMedium" style={styles.dateValue}>
-                  {format(endDate, 'MMM d, yyyy')}
-                </Text>
-              </Card.Content>
-            </Card>
-          </TouchableOpacity>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+      >
+        {/* What kind of date card */}
+        <View style={styles.card}>
+          <Text style={styles.label}>What kind of date?</Text>
+          <RNTextInput
+            value={prompt}
+            onChangeText={setPrompt}
+            placeholder="e.g., cozy italian restaurant, outdoor adventure..."
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={3}
+            style={styles.textInput}
+            editable={!isGenerating}
+          />
         </View>
 
-        <Text variant="bodySmall" style={styles.hint}>
-          Tap a date to change it
-        </Text>
+        {/* Location card */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Location</Text>
+          <RNTextInput
+            value={location}
+            onChangeText={setLocation}
+            placeholder="e.g., New York, NY"
+            placeholderTextColor="#9CA3AF"
+            style={styles.textInputSingle}
+            editable={!isGenerating}
+          />
+        </View>
 
-        <Button
-          mode="contained"
+        {/* Date Range */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Date Range</Text>
+          <Text style={styles.hint}>
+            We'll find free time in your calendars during this period
+          </Text>
+
+          <View style={styles.dateRow}>
+            <TouchableOpacity
+              style={styles.dateCard}
+              onPress={() => setShowStartDatePicker(true)}
+              disabled={isGenerating}
+              activeOpacity={0.7}
+            >
+              <View style={styles.dateCardInner}>
+                <View style={styles.dateCardHeader}>
+                  <Text style={styles.dateLabel}>Start Date</Text>
+                  <Text style={styles.dateIcon}>💕</Text>
+                </View>
+                <Text style={styles.dateValue}>
+                  {format(startDate, 'MMM d, yyyy')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.dateCard}
+              onPress={() => setShowEndDatePicker(true)}
+              disabled={isGenerating}
+              activeOpacity={0.7}
+            >
+              <View style={styles.dateCardInner}>
+                <View style={styles.dateCardHeader}>
+                  <Text style={styles.dateLabel}>End Date</Text>
+                  <Text style={styles.dateIcon}>💕</Text>
+                </View>
+                <Text style={styles.dateValue}>
+                  {format(endDate, 'MMM d, yyyy')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Generate Button */}
+        <TouchableOpacity
+          style={[styles.generateButton, (!isFormValid || isGenerating) && styles.generateButtonDisabled]}
           onPress={handleGenerate}
-          loading={isGenerating}
           disabled={isGenerating || !isFormValid}
-          style={styles.button}
-          icon="heart"
+          activeOpacity={0.8}
         >
-          {isGenerating ? 'Generating...' : 'Generate Date Ideas'}
-        </Button>
+          <LinearGradient
+            colors={(!isFormValid || isGenerating) ? ['#D1D5DB', '#D1D5DB'] : ['#EC4899', '#D946EF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.buttonGradient}
+          >
+            <Text style={styles.generateButtonText}>
+              {isGenerating ? 'Generating...' : '💕 Generate Date Ideas'}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
       </ScrollView>
 
       <DateGenerationProgress visible={isGenerating} />
@@ -161,6 +182,7 @@ export const DateGeneratorScreen: React.FC = () => {
         visible={!!error}
         onDismiss={clearError}
         duration={5000}
+        style={styles.snackbar}
       >
         {error || ''}
       </Snackbar>
@@ -171,64 +193,132 @@ export const DateGeneratorScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#4B5563',
+    fontWeight: '400',
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 20,
-  },
-  title: {
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginBottom: 24,
-    textAlign: 'center',
-    color: '#666',
-  },
-  input: {
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  sectionTitle: {
-    marginTop: 8,
-    marginBottom: 4,
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  textInput: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  textInputSingle: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   hint: {
-    color: '#999',
-    marginBottom: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
   },
   dateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
     gap: 12,
   },
   dateCard: {
     flex: 1,
   },
   dateCardInner: {
-    backgroundColor: '#FFF5FB',
-    borderWidth: 1,
-    borderColor: '#FDE2F3',
-    elevation: 0,
+    backgroundColor: '#F3E8FF',
+    borderRadius: 12,
+    padding: 16,
   },
-  dateCardContent: {
+  dateCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   dateLabel: {
-    color: '#EC4899',
+    fontSize: 12,
+    color: '#6B7280',
     fontWeight: '600',
+    textTransform: 'uppercase',
   },
   dateIcon: {
     fontSize: 16,
   },
   dateValue: {
+    fontSize: 16,
     color: '#1F2937',
     fontWeight: '600',
   },
-  button: {
-    marginVertical: 16,
+  generateButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  generateButtonDisabled: {
+    opacity: 0.6,
+  },
+  buttonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  generateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  snackbar: {
+    backgroundColor: '#EC4899',
   },
 });
