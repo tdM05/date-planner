@@ -25,8 +25,8 @@ export const ResultsScreen: React.FC = () => {
       const startTime = parseISO(event.suggested_time);
       const endTime = addHours(startTime, 2);
 
-      // Add event to Google Calendar
-      await calendarAPI.addEvent({
+      // Add event to Google Calendar (and partner's calendar if connected)
+      const response = await calendarAPI.addEvent({
         summary: `Date: ${event.name}`,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
@@ -34,7 +34,12 @@ export const ResultsScreen: React.FC = () => {
         description: event.reason,
       });
 
-      setMessage(`✓ "${event.name}" added to your calendar!`);
+      // Show different message based on whether it was added to partner's calendar too
+      if (response.added_to_partner_calendar) {
+        setMessage(`✓ "${event.name}" added to both calendars!`);
+      } else {
+        setMessage(`✓ "${event.name}" added to your calendar!`);
+      }
     } catch (error: any) {
       const errorMsg = error.message || 'Failed to add to calendar. Please connect your calendar in Settings.';
       setMessage(errorMsg);
