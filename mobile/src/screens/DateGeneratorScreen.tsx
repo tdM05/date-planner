@@ -174,7 +174,7 @@ export const DateGeneratorScreen: React.FC = () => {
             style={styles.buttonGradient}
           >
             <Text style={styles.generateButtonText}>
-              {isGenerating ? 'Generating...' : '💕 Generate Date Ideas'}
+              {isGenerating ? 'Generating...' : 'Generate Date Ideas'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
