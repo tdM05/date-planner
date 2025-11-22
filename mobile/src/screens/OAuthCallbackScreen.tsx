@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store';
 
@@ -12,6 +12,15 @@ export const OAuthCallbackScreen: React.FC = () => {
     const handleCallback = async () => {
       try {
         console.log('[OAuthCallback] Processing OAuth callback...');
+
+        // This screen is only supported on web platform
+        if (Platform.OS !== 'web') {
+          console.warn('[OAuthCallback] This screen is only supported on web platform');
+          setError('OAuth callback only supported on web platform');
+          setTimeout(() => navigation.navigate('Welcome' as never), 3000);
+          return;
+        }
+
         console.log('[OAuthCallback] Current URL:', window.location.href);
 
         // Extract parameters from URL
