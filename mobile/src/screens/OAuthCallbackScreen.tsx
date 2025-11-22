@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native'; // Added useRoute
 import { useAuthStore } from '../store';
 
 export const OAuthCallbackScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute(); // Get the route to access params on mobile
   const { setToken } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
@@ -13,62 +14,70 @@ export const OAuthCallbackScreen: React.FC = () => {
       try {
         console.log('[OAuthCallback] Processing OAuth callback...');
 
-        // This screen is only supported on web platform
-        if (Platform.OS !== 'web') {
-          console.warn('[OAuthCallback] This screen is only supported on web platform');
-          setError('OAuth callback only supported on web platform');
-          setTimeout(() => navigation.navigate('Welcome' as never), 3000);
-          return;
+        let token, success, errorParam;
+
+        // ---------------------------------------------------------
+        // PLATFORM SPECIFIC PARAM EXTRACTION
+        // ---------------------------------------------------------
+        if (Platform.OS === 'web') {
+          // Web: Read from browser URL
+          const params = new URLSearchParams(window.location.search);
+          token = params.get('token');
+          success = params.get('success');
+          errorParam = params.get('error');
+        } else {
+          // Mobile: Read from React Navigation Route Params
+          // The deep link `dateplanner://oauth/callback?token=xyz`
+          // is automatically parsed into this object by React Navigation.
+          const params = route.params as { token?: string; success?: string; error?: string } || {};
+          token = params.token;
+          success = params.success;
+          errorParam = params.error;
         }
-
-        console.log('[OAuthCallback] Current URL:', window.location.href);
-
-        // Extract parameters from URL
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get('token');
-        const success = params.get('success');
-        const errorParam = params.get('error');
+        // ---------------------------------------------------------
 
         console.log('[OAuthCallback] Params:', { token: !!token, success, error: errorParam });
 
         if (errorParam) {
           setError(decodeURIComponent(errorParam.replace(/\+/g, ' ')));
-          console.error('[OAuthCallback] OAuth error:', errorParam);
           setTimeout(() => navigation.navigate('Welcome' as never), 3000);
           return;
         }
 
         if (token) {
-          console.log('[OAuthCallback] Token received, setting...');
           await setToken(token);
-          console.log('[OAuthCallback] Token set successfully');
-          // Navigate to Home screen after successful authentication
-          // Use replace to prevent going back to the callback screen
+
           if (Platform.OS === 'web') {
-            // On web, update URL to remove token from URL bar
             window.history.replaceState({}, '', '/');
           }
+
+          // Success! Reset to Main Tabs
           navigation.reset({
             index: 0,
             routes: [{ name: 'MainTabs' as never }],
           });
         } else if (success === 'true') {
-          console.log('[OAuthCallback] Calendar connected successfully');
-          setTimeout(() => navigation.navigate('MainTabs' as never, { screen: 'Profile' }), 1000);
+          // Calendar connected successfully
+          navigation.reset({
+            index: 0,
+            routes: [{
+              name: 'MainTabs' as never,
+              params: { screen: 'Profile' } // Go back to profile
+            }],
+          });
         } else {
-          setError('No token or success parameter received');
-          console.error('[OAuthCallback] Missing expected parameters');
+          setError('No token received');
           setTimeout(() => navigation.navigate('Welcome' as never), 3000);
         }
       } catch (err: any) {
-        console.error('[OAuthCallback] Error processing callback:', err);
-        setError(err.message || 'Failed to process OAuth callback');
+        console.error('[OAuthCallback] Error:', err);
+        setError(err.message || 'Callback failed');
         setTimeout(() => navigation.navigate('Welcome' as never), 3000);
       }
     };
 
     handleCallback();
-  }, []);
+  }, [route.params]);
 
   if (error) {
     return (
@@ -86,7 +95,7 @@ export const OAuthCallbackScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#EC4899" />
-        <Text style={styles.loadingText}>Completing authentication...</Text>
+        <Text style={styles.loadingText}>Finalizing login...</Text>
       </View>
     </View>
   );
