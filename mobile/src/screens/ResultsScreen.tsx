@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text as RNText } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text as RNText, Linking, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDateStore } from '../store';
@@ -15,11 +15,11 @@ export const ResultsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { datePlan, clearDatePlan } = useDateStore();
   const [message, setMessage] = useState<string | null>(null);
-  const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
+  const [addingEventIndex, setAddingEventIndex] = useState<number | null>(null);
 
-  const handleAddVenueToCalendar = async (event: any) => {
+  const handleAddVenueToCalendar = async (event: any, index: number) => {
     try {
-      setIsAddingToCalendar(true);
+      setAddingEventIndex(index);
 
       // Parse the suggested time and create a 2-hour event
       const startTime = parseISO(event.suggested_time);
@@ -34,12 +34,28 @@ export const ResultsScreen: React.FC = () => {
         description: event.reason,
       });
 
-      setMessage(`"${event.name}" added to your calendar!`);
+      setMessage(`✓ "${event.name}" added to your calendar!`);
     } catch (error: any) {
       const errorMsg = error.message || 'Failed to add to calendar. Please connect your calendar in Settings.';
       setMessage(errorMsg);
     } finally {
-      setIsAddingToCalendar(false);
+      setAddingEventIndex(null);
+    }
+  };
+
+  const openInMaps = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    const url = Platform.select({
+      ios: `maps://app?q=${encodedAddress}`,
+      android: `geo:0,0?q=${encodedAddress}`,
+      default: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch((err) => {
+        console.error('Failed to open maps:', err);
+        setMessage('Failed to open maps');
+      });
     }
   };
 
@@ -105,7 +121,9 @@ export const ResultsScreen: React.FC = () => {
               </View>
 
               {event.address && (
-                <RNText style={styles.address}>{event.address}</RNText>
+                <TouchableOpacity onPress={() => openInMaps(event.address)} activeOpacity={0.7}>
+                  <RNText style={styles.address}>📍 {event.address}</RNText>
+                </TouchableOpacity>
               )}
 
               <RNText style={styles.reason}>{event.reason}</RNText>
@@ -118,17 +136,18 @@ export const ResultsScreen: React.FC = () => {
               </View>
 
               <TouchableOpacity
-                onPress={() => handleAddVenueToCalendar(event)}
-                disabled={isAddingToCalendar}
+                onPress={() => handleAddVenueToCalendar(event, index)}
+                disabled={addingEventIndex === index}
+                activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={['#F9A8D4', '#EC4899']}
+                  colors={addingEventIndex === index ? ['#D1D5DB', '#D1D5DB'] : ['#F9A8D4', '#EC4899']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.calendarButton}
+                  style={[styles.calendarButton, addingEventIndex === index && styles.calendarButtonDisabled]}
                 >
                   <RNText style={styles.calendarButtonText}>
-                    {isAddingToCalendar ? 'Adding...' : '📅 Add to Calendar'}
+                    {addingEventIndex === index ? 'Adding...' : '📅 Add to Calendar'}
                   </RNText>
                 </LinearGradient>
               </TouchableOpacity>
@@ -153,7 +172,10 @@ export const ResultsScreen: React.FC = () => {
 
       {/* Custom notification */}
       {message && (
-        <View style={styles.notification}>
+        <View style={[
+          styles.notification,
+          message.startsWith('✓') ? styles.notificationSuccess : styles.notificationError
+        ]}>
           <RNText style={styles.notificationText}>{message}</RNText>
         </View>
       )}
@@ -255,6 +277,7 @@ const styles = StyleSheet.create({
     color: '#EC4899',
     marginBottom: 12,
     fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   reason: {
     fontSize: 15,
@@ -283,6 +306,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  calendarButtonDisabled: {
+    opacity: 0.6,
   },
   calendarButtonText: {
     color: '#FFFFFF',
@@ -322,19 +348,25 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 16,
     right: 16,
-    backgroundColor: '#1F2937',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  notificationSuccess: {
+    backgroundColor: '#10B981',
+  },
+  notificationError: {
+    backgroundColor: '#EF4444',
   },
   notificationText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
   },
 });
