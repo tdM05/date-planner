@@ -3,8 +3,8 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
-import { DatesScreen } from '../screens/DatesScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import { DateGeneratorScreen } from '../screens/DateGeneratorScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { useCoupleStore } from '../store';
 import { Home, Calendar, Heart, User } from 'lucide-react-native';
 
@@ -76,11 +76,11 @@ export const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Dates"
-        component={DatesScreen}
+        component={DateGeneratorScreen}
         options={{
           tabBarIcon: ({ color, focused }) => (
-            <Heart 
-              size={24} 
+            <Heart
+              size={24}
               color={color}
               fill={focused ? '#FCE7F3' : 'none'}
             />
@@ -89,7 +89,7 @@ export const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={SettingsScreen}
         options={{
           tabBarIcon: ({ color, focused }) => (
             <ProfileIcon color={color} focused={focused} />

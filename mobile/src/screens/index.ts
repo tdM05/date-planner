@@ -10,5 +10,3 @@ export { DateGeneratorScreen } from './DateGeneratorScreen';
 export { ResultsScreen } from './ResultsScreen';
 export { SettingsScreen } from './SettingsScreen';
 export { ScheduleScreen } from './ScheduleScreen';
-export { DatesScreen } from './DatesScreen';
-export { ProfileScreen } from './ProfileScreen';
