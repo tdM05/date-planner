@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, STORAGE_KEYS } from '../constants/config';
 import { APIError } from '../types';
+import { storage } from '../utils/storage';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -16,7 +16,7 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
+      const token = await storage.getItem(STORAGE_KEYS.JWT_TOKEN);
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -67,8 +67,8 @@ apiClient.interceptors.response.use(
       if (status === 401) {
         console.warn('[API] 401 Unauthorized - clearing auth');
         // Clear stored token and redirect to login
-        await AsyncStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
-        await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        await storage.removeItem(STORAGE_KEYS.JWT_TOKEN);
+        await storage.removeItem(STORAGE_KEYS.USER_DATA);
         // You can dispatch a logout action here if using global state
       }
 

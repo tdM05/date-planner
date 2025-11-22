@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { Text, TextInput, Button, Snackbar, Card } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDateStore } from '../store';
 import { format } from 'date-fns';
+import { DatePickerModal } from '../components/DatePickerModal';
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
@@ -16,6 +17,8 @@ export const DateGeneratorScreen: React.FC = () => {
   const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // 7 days from now
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   const handleGenerate = async () => {
     try {
@@ -78,20 +81,45 @@ export const DateGeneratorScreen: React.FC = () => {
         </Text>
 
         <View style={styles.dateRow}>
-          <View style={styles.dateInput}>
-            <Text variant="labelMedium">Start Date</Text>
-            <Text variant="bodyMedium">{format(startDate, 'MMM d, yyyy')}</Text>
-            {/* In production, you'd use a date picker here */}
-          </View>
-          <View style={styles.dateInput}>
-            <Text variant="labelMedium">End Date</Text>
-            <Text variant="bodyMedium">{format(endDate, 'MMM d, yyyy')}</Text>
-            {/* In production, you'd use a date picker here */}
-          </View>
+          <TouchableOpacity
+            style={styles.dateCard}
+            onPress={() => setShowStartDatePicker(true)}
+            disabled={isGenerating}
+          >
+            <Card style={styles.dateCardInner}>
+              <Card.Content>
+                <View style={styles.dateCardContent}>
+                  <Text variant="labelSmall" style={styles.dateLabel}>Start Date</Text>
+                  <Text variant="bodySmall" style={styles.dateIcon}>💕</Text>
+                </View>
+                <Text variant="titleMedium" style={styles.dateValue}>
+                  {format(startDate, 'MMM d, yyyy')}
+                </Text>
+              </Card.Content>
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dateCard}
+            onPress={() => setShowEndDatePicker(true)}
+            disabled={isGenerating}
+          >
+            <Card style={styles.dateCardInner}>
+              <Card.Content>
+                <View style={styles.dateCardContent}>
+                  <Text variant="labelSmall" style={styles.dateLabel}>End Date</Text>
+                  <Text variant="bodySmall" style={styles.dateIcon}>💕</Text>
+                </View>
+                <Text variant="titleMedium" style={styles.dateValue}>
+                  {format(endDate, 'MMM d, yyyy')}
+                </Text>
+              </Card.Content>
+            </Card>
+          </TouchableOpacity>
         </View>
 
-        <Text variant="bodySmall" style={styles.note}>
-          Note: Using simplified dates for now. In production, you can tap to select specific dates.
+        <Text variant="bodySmall" style={styles.hint}>
+          Tap a date to change it
         </Text>
 
         <Button
@@ -111,6 +139,22 @@ export const DateGeneratorScreen: React.FC = () => {
           </Text>
         )}
       </ScrollView>
+
+      <DatePickerModal
+        visible={showStartDatePicker}
+        onDismiss={() => setShowStartDatePicker(false)}
+        onSelectDate={(date) => setStartDate(date)}
+        initialDate={startDate}
+        label="Select Start Date"
+      />
+
+      <DatePickerModal
+        visible={showEndDatePicker}
+        onDismiss={() => setShowEndDatePicker(false)}
+        onSelectDate={(date) => setEndDate(date)}
+        initialDate={endDate}
+        label="Select End Date"
+      />
 
       <Snackbar
         visible={!!error}
@@ -154,19 +198,34 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
+    gap: 12,
   },
-  dateInput: {
+  dateCard: {
     flex: 1,
-    marginHorizontal: 4,
-    padding: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
   },
-  note: {
-    color: '#999',
-    fontStyle: 'italic',
-    marginBottom: 16,
+  dateCardInner: {
+    backgroundColor: '#FFF5FB',
+    borderWidth: 1,
+    borderColor: '#FDE2F3',
+    elevation: 0,
+  },
+  dateCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  dateLabel: {
+    color: '#EC4899',
+    fontWeight: '600',
+  },
+  dateIcon: {
+    fontSize: 16,
+  },
+  dateValue: {
+    color: '#1F2937',
+    fontWeight: '600',
   },
   button: {
     marginVertical: 16,

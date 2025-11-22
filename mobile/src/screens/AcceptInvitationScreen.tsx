@@ -13,7 +13,11 @@ export const AcceptInvitationScreen: React.FC = () => {
   const handleAccept = async () => {
     try {
       await acceptInvitation(token);
-      // Navigation will happen automatically after couple is created
+      // Navigate to Home screen after successful acceptance
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' as never }],
+      });
     } catch (err) {
       // Error is handled by the store
     }

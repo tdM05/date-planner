@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, LoginRequest, RegisterRequest } from '../types';
 import { authAPI } from '../api';
 import { STORAGE_KEYS } from '../constants/config';
+import { storage } from '../utils/storage';
 
 interface AuthState {
   // State
@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = response.access_token;
 
       // Store token
-      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      await storage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       set({ token, isAuthenticated: true });
       console.log('[AuthStore] Token stored, fetching user...');
 
@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = response.access_token;
 
       // Store token
-      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      await storage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       set({ token, isAuthenticated: true });
       console.log('[AuthStore] Token stored, fetching user...');
 
@@ -86,8 +86,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     try {
       // Clear storage
-      await AsyncStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
-      await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      await storage.removeItem(STORAGE_KEYS.JWT_TOKEN);
+      await storage.removeItem(STORAGE_KEYS.USER_DATA);
 
       // Reset state
       set({
@@ -106,7 +106,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       console.log('[AuthStore] Loading stored auth...');
       set({ isLoading: true });
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
+      const token = await storage.getItem(STORAGE_KEYS.JWT_TOKEN);
 
       if (token) {
         console.log('[AuthStore] Found stored token, verifying...');
@@ -127,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Set token (for OAuth flow)
   setToken: async (token: string) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      await storage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       set({ token, isAuthenticated: true });
 
       // Try to fetch user data, but don't fail OAuth if it's just a network error
@@ -156,7 +156,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('[AuthStore] Fetching user data...');
       const user = await authAPI.getMe();
       console.log('[AuthStore] User data received:', user);
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+      await storage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
       set({ user });
       console.log('[AuthStore] User data stored');
     } catch (error: any) {

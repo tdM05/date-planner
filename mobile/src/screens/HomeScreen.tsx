@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, Button, Card, Chip } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore, useCoupleStore } from '../store';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -22,13 +22,16 @@ export const HomeScreen: React.FC = () => {
 
   const [refreshing, setRefreshing] = React.useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     await Promise.all([fetchPartner(), fetchCalendarStatus()]);
   };
+
+  // Reload data whenever the screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
