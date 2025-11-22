@@ -40,8 +40,28 @@ export const AppNavigator: React.FC = () => {
     return <LoadingSpinner message="Loading..." />;
   }
 
+  // Deep linking configuration for OAuth callback
+  const linking = {
+    prefixes: ['http://localhost:8081', 'https://localhost:8081', 'dateplanner://'],
+    config: {
+      screens: {
+        Welcome: '',
+        Login: 'login',
+        Register: 'register',
+        GoogleOAuth: 'google-oauth',
+        OAuthCallback: 'oauth/callback',
+        Home: 'home',
+        InvitePartner: 'invite-partner',
+        AcceptInvitation: 'accept-invitation',
+        DateGenerator: 'date-generator',
+        Results: 'results',
+        Settings: 'settings',
+      },
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {

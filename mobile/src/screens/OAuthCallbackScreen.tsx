@@ -41,11 +41,17 @@ export const OAuthCallbackScreen: React.FC = () => {
         if (token) {
           console.log('[OAuthCallback] Token received, setting...');
           await setToken(token);
-          console.log('[OAuthCallback] Token set successfully, navigating to Home');
-          // Force navigation to Home after successful OAuth
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 100);
+          console.log('[OAuthCallback] Token set successfully');
+          // Navigate to Home screen after successful authentication
+          // Use replace to prevent going back to the callback screen
+          if (Platform.OS === 'web') {
+            // On web, update URL to remove token from URL bar
+            window.history.replaceState({}, '', '/');
+          }
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' as never }],
+          });
         } else if (success === 'true') {
           console.log('[OAuthCallback] Calendar connected successfully');
           setTimeout(() => navigation.navigate('Settings' as never), 1000);

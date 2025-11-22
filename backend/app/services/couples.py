@@ -144,7 +144,7 @@ class CouplesService(AbstractService):
 
         accepter_email = accepter.data[0]['email']
         if accepter_email != invitation['invitee_email']:
-            raise ValueError("This invitation is not for you")
+            raise ValueError(f"This invitation is not for you. Your email: {accepter_email}, Invitation email: {invitation['invitee_email']}")
 
         # Check if accepter already has a partner
         existing_couple = self._get_couple_by_user_id(accepter_id)

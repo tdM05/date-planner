@@ -129,7 +129,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
       set({ token, isAuthenticated: true });
-      await get().fetchUser();
+
+      // Try to fetch user data, but don't fail OAuth if it's just a network error
+      try {
+        await get().fetchUser();
+      } catch (fetchError: any) {
+        const isAbortedRequest = fetchError.message?.includes('aborted') || fetchError.message?.includes('timeout');
+        if (isAbortedRequest) {
+          console.log('[AuthStore] User fetch failed during OAuth, will retry on next load');
+          // Token is already set, navigation will happen automatically
+          // User data will be fetched when the app loads
+        } else {
+          // For other errors (like 401), rethrow
+          throw fetchError;
+        }
+      }
     } catch (error: any) {
       console.error('Set token error:', error);
       throw error;
@@ -147,8 +161,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('[AuthStore] User data stored');
     } catch (error: any) {
       console.error('[AuthStore] Fetch user error:', error);
-      // If fetching user fails, clear auth
-      await get().logout();
+      // Only clear auth if it's an actual auth error (401), not a network/timeout error
+      // Aborted requests (from page reloads) or timeouts should not clear the token
+      const isAuthError = error.status === 401;
+      const isAbortedRequest = error.message?.includes('aborted') || error.message?.includes('timeout');
+
+      if (isAuthError) {
+        console.log('[AuthStore] Authentication failed, clearing token');
+        await get().logout();
+      } else if (isAbortedRequest) {
+        console.log('[AuthStore] Request aborted/timed out, keeping token for retry');
+        // Don't clear the token - it might still be valid
+      } else {
+        // For other errors, clear auth to be safe
+        console.log('[AuthStore] Unknown error, clearing token');
+        await get().logout();
+      }
       throw error;
     }
   },

@@ -9,14 +9,57 @@ from app.services.auth import get_auth_service, AuthService
 from app.core.models import GoogleAuthURL, LoginResponse, UserResponse, RegisterRequest, LoginRequest, User, CalendarStatusResponse
 from app.core.dependencies import get_current_user, get_current_user_optional
 from app.utils.couple import get_user_couple, get_partner_id
+from app.config import settings
 
 
 router = APIRouter()
 
 
+import base64
+from urllib.parse import urlparse
+
+
+def validate_redirect_url(url: str) -> bool:
+    """
+    Validate redirect URL to prevent open redirect vulnerabilities.
+
+    Args:
+        url: The redirect URL to validate
+
+    Returns:
+        True if URL is allowed, False otherwise
+    """
+    try:
+        parsed = urlparse(url)
+
+        # Allow localhost for development
+        if parsed.hostname in ['localhost', '127.0.0.1']:
+            return True
+
+        # Allow dateplanner deep link scheme for mobile
+        if parsed.scheme == 'dateplanner':
+            return True
+
+        # Allow HTTPS URLs from trusted domains
+        # Add your production domain here when you deploy frontend
+        allowed_domains = [
+            # Add production domains here, e.g.:
+            # 'yourdomain.com',
+            # 'app.yourdomain.com',
+        ]
+
+        if parsed.scheme == 'https' and parsed.hostname in allowed_domains:
+            return True
+
+        return False
+    except Exception:
+        return False
+
+
 @router.get("/google/login", response_model=GoogleAuthURL)
 def initiate_google_login(
     platform: str = Query("mobile", description="Platform: 'web' or 'mobile'"),
+    redirect_url: Optional[str] = Query(None, description="Redirect URL after OAuth completes"),
     current_user: Optional[User] = Depends(get_current_user_optional),
     auth_service: AuthService = Depends(get_auth_service)
 ):
@@ -31,16 +74,31 @@ def initiate_google_login(
 
     Args:
         platform: 'web' or 'mobile' to determine redirect URL in callback
+        redirect_url: Optional redirect URL to return to after OAuth (for dynamic routing)
         current_user: Optional current user (if connecting calendar)
 
     Returns:
         GoogleAuthURL with the OAuth URL to redirect to
     """
-    # Build state parameter with platform and optionally user_id
+    # Validate redirect URL if provided
+    if redirect_url and not validate_redirect_url(redirect_url):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid redirect URL: {redirect_url}"
+        )
+
+    # Build state parameter with platform, optionally user_id, and optionally redirect_url
+    state_parts = [platform]
+
     if current_user:
-        state = f"{platform}:user_id:{current_user.id}"
-    else:
-        state = platform
+        state_parts.extend(["user_id", str(current_user.id)])
+
+    if redirect_url:
+        # Base64 encode the redirect URL to safely include in state
+        encoded_redirect = base64.urlsafe_b64encode(redirect_url.encode()).decode()
+        state_parts.extend(["redirect", encoded_redirect])
+
+    state = ":".join(state_parts)
 
     auth_url = auth_service.get_google_auth_url(state=state)
     return GoogleAuthURL(authorization_url=auth_url)
@@ -60,13 +118,14 @@ def google_callback(
     2. Connect calendar: state contains "user_id:xxx" → Updates existing user's google_refresh_token
 
     State parameter format:
-    - "web" or "mobile" for platform indication
-    - "web:user_id:xxx" for existing web user connecting calendar
-    - "mobile:user_id:xxx" for existing mobile user connecting calendar
+    - "{platform}" - e.g. "web" or "mobile"
+    - "{platform}:user_id:{uuid}" - e.g. "web:user_id:xxx"
+    - "{platform}:redirect:{base64_url}" - e.g. "web:redirect:aHR0cDov..."
+    - "{platform}:user_id:{uuid}:redirect:{base64_url}" - full format with all params
 
     Args:
         code: Authorization code from Google OAuth flow
-        state: Optional state parameter that may contain platform and user_id
+        state: Optional state parameter that may contain platform, user_id, and redirect_url
 
     Returns:
         RedirectResponse to app with token in URL
@@ -75,34 +134,75 @@ def google_callback(
         # Parse state parameter
         platform = "mobile"  # Default to mobile for backward compatibility
         current_user = None
+        custom_redirect_url = None
 
         if state:
             parts = state.split(":")
+
+            # Extract platform (first part)
             if len(parts) >= 1:
                 platform = parts[0] if parts[0] in ["web", "mobile"] else "mobile"
-            if len(parts) >= 3 and parts[1] == "user_id":
-                # Existing user connecting calendar
-                from uuid import UUID
-                user_id = UUID(parts[2])
-                current_user = auth_service.get_user_by_id(user_id)
+
+            # Parse remaining parts for user_id and redirect
+            i = 1
+            while i < len(parts):
+                if parts[i] == "user_id" and i + 1 < len(parts):
+                    # Extract user_id
+                    from uuid import UUID
+                    try:
+                        user_id = UUID(parts[i + 1])
+                        current_user = auth_service.get_user_by_id(user_id)
+                    except Exception:
+                        pass
+                    i += 2
+                elif parts[i] == "redirect" and i + 1 < len(parts):
+                    # Extract and decode redirect URL
+                    try:
+                        custom_redirect_url = base64.urlsafe_b64decode(parts[i + 1]).decode()
+                    except Exception:
+                        pass
+                    i += 2
+                else:
+                    i += 1
 
         # Handle OAuth callback
         result = auth_service.handle_oauth_callback(code, current_user)
 
-        # Determine redirect URL based on platform
+        # Determine redirect URL
+        # Priority: custom_redirect_url > platform-based default
+        if custom_redirect_url:
+            # Use custom redirect URL (passed from frontend)
+            base_url = custom_redirect_url
+        elif platform == "mobile":
+            # Default mobile deep link
+            base_url = "dateplanner://"
+        else:
+            # Fallback to localhost for web (should not reach here if frontend sends redirect)
+            base_url = "http://localhost:8081"
+
+        # Build final redirect URL with parameters
         if isinstance(result, dict):
-            # Existing user connecting calendar - redirect back to app
-            redirect_url = "dateplanner://oauth/callback?success=true" if platform == "mobile" else "http://localhost:8081/oauth/callback?success=true"
+            # Existing user connecting calendar
+            redirect_url = f"{base_url}/oauth/callback?success=true"
         else:
             # New user - include token
             token = result.access_token
-            redirect_url = f"dateplanner://oauth/callback?token={token}" if platform == "mobile" else f"http://localhost:8081/oauth/callback?token={token}"
+            redirect_url = f"{base_url}/oauth/callback?token={token}"
 
         return RedirectResponse(url=redirect_url)
     except Exception as e:
         # Redirect to error page
         error_msg = str(e).replace(" ", "+")
-        redirect_url = f"dateplanner://oauth/callback?error={error_msg}" if platform == "mobile" else f"http://localhost:8081/oauth/callback?error={error_msg}"
+
+        # Try to use custom redirect URL for error too
+        if custom_redirect_url:
+            base_url = custom_redirect_url
+        elif platform == "mobile":
+            base_url = "dateplanner://"
+        else:
+            base_url = "http://localhost:8081"
+
+        redirect_url = f"{base_url}/oauth/callback?error={error_msg}"
         return RedirectResponse(url=redirect_url)
 
 
