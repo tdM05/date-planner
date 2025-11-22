@@ -44,7 +44,7 @@ export const DateGenerationProgress: React.FC<DateGenerationProgressProps> = ({ 
         }
         return prev;
       });
-    }, 3000);
+    }, 6500);
 
     return () => {
       clearInterval(progressInterval);

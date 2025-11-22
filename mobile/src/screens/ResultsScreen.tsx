@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, Button, Chip, Divider, Snackbar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDateStore } from '../store';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addHours } from 'date-fns';
+import { calendarAPI } from '../api';
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
@@ -17,27 +18,29 @@ export const ResultsScreen: React.FC = () => {
   const handleAddVenueToCalendar = async (event: any) => {
     try {
       setIsAddingToCalendar(true);
-      // TODO: Call backend API to add event to Google Calendar
-      // For now, show success message
+
+      // Parse the suggested time and create a 2-hour event
+      const startTime = parseISO(event.suggested_time);
+      const endTime = addHours(startTime, 2);
+
+      // Add event to Google Calendar
+      await calendarAPI.addEvent({
+        summary: `Date: ${event.name}`,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        location: event.address || undefined,
+        description: event.reason,
+      });
+
       setMessage(`💕 "${event.name}" added to your calendar!`);
-    } catch (error) {
-      setMessage('Failed to add to calendar. Please try again.');
+    } catch (error: any) {
+      const errorMsg = error.message || 'Failed to add to calendar. Please connect your calendar in Settings.';
+      setMessage(errorMsg);
     } finally {
       setIsAddingToCalendar(false);
     }
   };
 
-  const handleAddTimeslotToCalendar = async (slot: any) => {
-    try {
-      setIsAddingToCalendar(true);
-      // TODO: Call backend API to add timeslot to Google Calendar
-      setMessage(`💕 Time slot added to your calendar!`);
-    } catch (error) {
-      setMessage('Failed to add to calendar. Please try again.');
-    } finally {
-      setIsAddingToCalendar(false);
-    }
-  };
 
   if (!datePlan) {
     return (
@@ -116,51 +119,6 @@ export const ResultsScreen: React.FC = () => {
         ))}
       </View>
 
-      {/* Free Time Slots */}
-      <View style={styles.section}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>
-          🕐 Available Time Slots
-        </Text>
-        <Text variant="bodySmall" style={styles.sectionSubtitle}>
-          Times when both you and your partner are free 💕
-        </Text>
-
-        {datePlan.free_time_slots.slice(0, 10).map((slot, index) => (
-          <TouchableOpacity
-            key={index}
-            onPress={() => handleAddTimeslotToCalendar(slot)}
-            disabled={isAddingToCalendar}
-          >
-            <Card style={[styles.slotCard, styles.clickableCard]}>
-              <Card.Content>
-                <View style={styles.slotRow}>
-                  <View style={styles.slotTime}>
-                    <Text variant="bodyMedium">
-                      {format(parseISO(slot.start), 'EEE, MMM d')}
-                    </Text>
-                    <Text variant="bodySmall" style={styles.slotTimeDetail}>
-                      {format(parseISO(slot.start), 'h:mm a')} - {format(parseISO(slot.end), 'h:mm a')}
-                    </Text>
-                  </View>
-                  <View style={styles.slotActions}>
-                    <Chip mode="outlined" compact style={styles.durationChip}>
-                      {slot.duration_hours.toFixed(1)}h
-                    </Chip>
-                    <Text variant="bodySmall" style={styles.tapHint}>Tap to add 📅</Text>
-                  </View>
-                </View>
-              </Card.Content>
-            </Card>
-          </TouchableOpacity>
-        ))}
-
-        {datePlan.free_time_slots.length > 10 && (
-          <Text variant="bodySmall" style={styles.moreText}>
-            +{datePlan.free_time_slots.length - 10} more time slots available
-          </Text>
-        )}
-      </View>
-
       <View style={styles.actions}>
         <Button
           mode="outlined"
@@ -227,11 +185,6 @@ const styles = StyleSheet.create({
     color: '#EC4899',
     fontWeight: '600',
   },
-  sectionSubtitle: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    color: '#A855F7',
-  },
   card: {
     marginHorizontal: 16,
     marginBottom: 12,
@@ -278,45 +231,6 @@ const styles = StyleSheet.create({
   calendarButton: {
     flex: 1,
     marginHorizontal: 8,
-  },
-  slotCard: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#FDE2F3',
-  },
-  clickableCard: {
-    borderWidth: 2,
-    borderColor: '#EC4899',
-  },
-  slotRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  slotTime: {
-    flex: 1,
-  },
-  slotActions: {
-    alignItems: 'flex-end',
-  },
-  durationChip: {
-    marginBottom: 4,
-  },
-  tapHint: {
-    color: '#EC4899',
-    fontSize: 11,
-    fontStyle: 'italic',
-  },
-  slotTimeDetail: {
-    color: '#666',
-    marginTop: 2,
-  },
-  moreText: {
-    textAlign: 'center',
-    color: '#999',
-    marginTop: 8,
   },
   actions: {
     padding: 16,
