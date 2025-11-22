@@ -181,14 +181,14 @@ export const HomeScreen: React.FC = () => {
           </View>
 
           {/* Quick Actions - Full */}
-
+          <View style={styles.quickActionsGrid}>
             <TouchableOpacity style={[styles.quickActionCard, styles.flowersCard]} activeOpacity={0.7}>
               <Text style={styles.quickActionIcon}>🌸</Text>
               <Text style={styles.quickActionTitle}>Flowers</Text>
               <Text style={styles.quickActionSubtitle}>Renew in 3d</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.quickActionCard, styles.scheduleCard]}
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
@@ -197,6 +197,7 @@ export const HomeScreen: React.FC = () => {
               <Text style={styles.quickActionTitle}>Schedule</Text>
               <Text style={styles.quickActionSubtitle}>Sync now</Text>
             </TouchableOpacity>
+          </View>
 
           {(!calendarStatus?.user_connected ||
             !calendarStatus?.partner_connected) && (
