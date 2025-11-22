@@ -70,10 +70,13 @@ async def add_calendar_event(
         added_to_partner_calendar = False
         try:
             partner_info = couples_service.get_partner(current_user.id)
+            print(f"DEBUG: Partner info: {partner_info}")
             if partner_info:
+                print(f"DEBUG: Found partner: {partner_info.partner.id}")
                 # Try to add event to partner's calendar
                 # This will only work if partner has connected their Google Calendar
                 try:
+                    print(f"DEBUG: Attempting to add event to partner's calendar...")
                     calendar_client.create_event(
                         user_id=partner_info.partner.id,
                         summary=request.summary,
@@ -83,11 +86,19 @@ async def add_calendar_event(
                         description=request.description,
                     )
                     added_to_partner_calendar = True
-                except ValueError:
+                    print(f"DEBUG: Successfully added event to partner's calendar!")
+                except ValueError as ve:
                     # Partner doesn't have calendar connected - that's okay
+                    print(f"DEBUG: Partner doesn't have calendar connected: {ve}")
                     pass
-        except Exception:
+                except Exception as e:
+                    print(f"DEBUG: Error adding to partner calendar: {e}")
+                    pass
+            else:
+                print(f"DEBUG: No partner found for user {current_user.id}")
+        except Exception as e:
             # If getting partner fails, continue without error
+            print(f"DEBUG: Error getting partner: {e}")
             pass
 
         message = f"Event '{request.summary}' added to your calendar!"
