@@ -10,7 +10,7 @@ import { useCoupleStore } from '../store';
 export const InvitePartnerScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { invitePartner, invitation, isLoading, error, clearError } = useCoupleStore();
+  const { invitePartner, invitation, isLoading, error, clearError, clearInvitation } = useCoupleStore();
 
   const [email, setEmail] = useState('');
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
@@ -146,7 +146,10 @@ export const InvitePartnerScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.doneButton}
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                clearInvitation();
+                navigation.goBack();
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.doneButtonText}>Done</Text>

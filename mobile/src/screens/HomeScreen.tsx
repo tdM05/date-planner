@@ -143,7 +143,9 @@ export const HomeScreen: React.FC = () => {
              >
                <Text style={styles.quickActionIcon}>📅</Text>
                <Text style={styles.quickActionTitle}>Calendar</Text>
-               <Text style={styles.quickActionSubtitle}>Sync now</Text>
+               <Text style={styles.quickActionSubtitle}>
+                 {calendarStatus?.user_connected ? 'View schedule' : 'Sync now'}
+               </Text>
              </TouchableOpacity>
            </View>
          </>
@@ -216,7 +218,9 @@ export const HomeScreen: React.FC = () => {
             >
               <Text style={styles.quickActionIcon}>📅</Text>
               <Text style={styles.quickActionTitle}>Calendar</Text>
-              <Text style={styles.quickActionSubtitle}>Sync now</Text>
+              <Text style={styles.quickActionSubtitle}>
+                {calendarStatus?.user_connected ? 'View schedule' : 'Sync now'}
+              </Text>
             </TouchableOpacity>
           </View>
 

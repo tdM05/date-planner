@@ -17,6 +17,7 @@ interface CoupleState {
   acceptInvitation: (token: string) => Promise<void>;
   fetchCalendarStatus: () => Promise<void>;
   clearError: () => void;
+  clearInvitation: () => void;
   reset: () => void;
 }
 
@@ -93,6 +94,11 @@ export const useCoupleStore = create<CoupleState>((set, get) => ({
   // Clear error
   clearError: () => {
     set({ error: null });
+  },
+
+  // Clear invitation
+  clearInvitation: () => {
+    set({ invitation: null });
   },
 
   // Reset store (on logout)

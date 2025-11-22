@@ -135,7 +135,6 @@ export const DateGeneratorScreen: React.FC = () => {
               <View style={styles.dateCardInner}>
                 <View style={styles.dateCardHeader}>
                   <Text style={styles.dateLabel}>Start Date</Text>
-                  <Text style={styles.dateIcon}>💕</Text>
                 </View>
                 <Text style={styles.dateValue}>
                   {format(startDate, 'MMM d, yyyy')}
@@ -152,7 +151,6 @@ export const DateGeneratorScreen: React.FC = () => {
               <View style={styles.dateCardInner}>
                 <View style={styles.dateCardHeader}>
                   <Text style={styles.dateLabel}>End Date</Text>
-                  <Text style={styles.dateIcon}>💕</Text>
                 </View>
                 <Text style={styles.dateValue}>
                   {format(endDate, 'MMM d, yyyy')}
@@ -176,7 +174,7 @@ export const DateGeneratorScreen: React.FC = () => {
             style={styles.buttonGradient}
           >
             <Text style={styles.generateButtonText}>
-              {isGenerating ? 'Generating...' : '💕 Generate Date Ideas'}
+              {isGenerating ? 'Generating...' : 'Generate Date Ideas'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
