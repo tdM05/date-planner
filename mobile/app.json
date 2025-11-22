@@ -29,6 +29,17 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minifyEnabled": false,
+            "shrinkResources": false
+          }
+        }
+      ]
+    ],
     "extra": {
       "apiUrl": "https://date-planner-production.up.railway.app",
       "eas": {
