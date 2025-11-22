@@ -85,17 +85,6 @@ export const AppNavigator: React.FC = () => {
               component={MainTabNavigator}
               options={{ headerShown: false }}
             />
-            
-            <Stack.Screen
-              name="InvitePartner"
-              component={InvitePartnerScreen}
-              options={{ title: 'Invite Partner' }}
-            />
-            <Stack.Screen
-              name="AcceptInvitation"
-              component={AcceptInvitationScreen}
-              options={{ title: 'Accept Invitation' }}
-            />
             <Stack.Screen
               name="DateGenerator"
               component={DateGeneratorScreen}

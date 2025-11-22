@@ -54,7 +54,7 @@ export const OAuthCallbackScreen: React.FC = () => {
           });
         } else if (success === 'true') {
           console.log('[OAuthCallback] Calendar connected successfully');
-          setTimeout(() => navigation.navigate('Settings' as never), 1000);
+          setTimeout(() => navigation.navigate('MainTabs' as never, { screen: 'Profile' }), 1000);
         } else {
           setError('No token or success parameter received');
           console.error('[OAuthCallback] Missing expected parameters');
