@@ -36,6 +36,38 @@ class AddEventResponse(BaseModel):
     added_to_partner_calendar: bool = False
 
 
+class CalendarEvent(BaseModel):
+    """Calendar event model."""
+
+    summary: str
+    start: str
+    end: str
+    description: str = ""
+
+
+class GetEventsResponse(BaseModel):
+    """Response model for getting calendar events."""
+
+    events: list[CalendarEvent]
+    user_name: str
+
+
+class FreeSlot(BaseModel):
+    """Free time slot model."""
+
+    start: str
+    end: str
+    duration_hours: float
+
+
+class GetFreeSlotsResponse(BaseModel):
+    """Response model for getting free time slots."""
+
+    free_slots: list[FreeSlot]
+    time_frame_start: str
+    time_frame_end: str
+
+
 @router.post("/add-event", response_model=AddEventResponse)
 async def add_calendar_event(
     request: AddEventRequest,
@@ -70,13 +102,10 @@ async def add_calendar_event(
         added_to_partner_calendar = False
         try:
             partner_info = couples_service.get_partner(current_user.id)
-            print(f"DEBUG: Partner info: {partner_info}")
             if partner_info:
-                print(f"DEBUG: Found partner: {partner_info.partner.id}")
                 # Try to add event to partner's calendar
                 # This will only work if partner has connected their Google Calendar
                 try:
-                    print(f"DEBUG: Attempting to add event to partner's calendar...")
                     calendar_client.create_event(
                         user_id=partner_info.partner.id,
                         summary=request.summary,
@@ -86,19 +115,11 @@ async def add_calendar_event(
                         description=request.description,
                     )
                     added_to_partner_calendar = True
-                    print(f"DEBUG: Successfully added event to partner's calendar!")
-                except ValueError as ve:
+                except ValueError:
                     # Partner doesn't have calendar connected - that's okay
-                    print(f"DEBUG: Partner doesn't have calendar connected: {ve}")
                     pass
-                except Exception as e:
-                    print(f"DEBUG: Error adding to partner calendar: {e}")
-                    pass
-            else:
-                print(f"DEBUG: No partner found for user {current_user.id}")
-        except Exception as e:
+        except Exception:
             # If getting partner fails, continue without error
-            print(f"DEBUG: Error getting partner: {e}")
             pass
 
         message = f"Event '{request.summary}' added to your calendar!"
@@ -120,4 +141,131 @@ async def add_calendar_event(
         # Other errors
         raise HTTPException(
             status_code=500, detail=f"Failed to create calendar event: {str(e)}"
+        )
+
+
+@router.get("/my-events", response_model=GetEventsResponse)
+async def get_my_events(
+    start_date: str,
+    end_date: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get calendar events for the current user within a date range.
+    """
+    try:
+        # Parse datetime strings
+        time_min = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        time_max = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+
+        # Get calendar client
+        calendar_client = get_calendar_client()
+
+        # Get events
+        events = calendar_client.get_events(current_user.id, time_min, time_max)
+
+        return GetEventsResponse(
+            events=[CalendarEvent(**event) for event in events],
+            user_name=current_user.full_name,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=428, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get calendar events: {str(e)}"
+        )
+
+
+@router.get("/partner-events", response_model=GetEventsResponse)
+async def get_partner_events(
+    start_date: str,
+    end_date: str,
+    current_user: User = Depends(get_current_user),
+    couples_service: CouplesService = Depends(get_couples_service),
+):
+    """
+    Get calendar events for the current user's partner within a date range.
+    """
+    try:
+        # Get partner info
+        partner_info = couples_service.get_partner(current_user.id)
+        if not partner_info:
+            raise HTTPException(status_code=404, detail="No partner found")
+
+        # Parse datetime strings
+        time_min = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        time_max = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+
+        # Get calendar client
+        calendar_client = get_calendar_client()
+
+        # Get events
+        events = calendar_client.get_events(
+            partner_info.partner.id, time_min, time_max
+        )
+
+        return GetEventsResponse(
+            events=[CalendarEvent(**event) for event in events],
+            user_name=partner_info.partner.full_name,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=428, detail="Partner calendar not connected")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get partner calendar events: {str(e)}"
+        )
+
+
+@router.get("/free-slots", response_model=GetFreeSlotsResponse)
+async def get_free_slots(
+    start_date: str,
+    end_date: str,
+    min_duration_hours: float = 2.0,
+    current_user: User = Depends(get_current_user),
+    couples_service: CouplesService = Depends(get_couples_service),
+):
+    """
+    Get mutual free time slots for the current user and their partner.
+    """
+    try:
+        # Get partner info
+        partner_info = couples_service.get_partner(current_user.id)
+        if not partner_info:
+            raise HTTPException(status_code=404, detail="No partner found")
+
+        # Parse datetime strings
+        time_min = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        time_max = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+
+        # Get calendar client
+        calendar_client = get_calendar_client()
+
+        # Find free slots
+        free_slots = calendar_client.find_free_slots(
+            current_user.id,
+            partner_info.partner.id,
+            time_min,
+            time_max,
+            min_duration_hours,
+        )
+
+        return GetFreeSlotsResponse(
+            free_slots=[FreeSlot(**slot) for slot in free_slots],
+            time_frame_start=time_min.isoformat(),
+            time_frame_end=time_max.isoformat(),
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=428, detail="Both calendars must be connected to find free slots"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to find free slots: {str(e)}"
         )
