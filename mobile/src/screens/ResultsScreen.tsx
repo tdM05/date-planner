@@ -129,7 +129,7 @@ export const ResultsScreen: React.FC = () => {
         </Button>
         <Button
           mode="text"
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
           style={styles.actionButton}
         >
           Back to Home
