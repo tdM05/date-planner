@@ -107,7 +107,9 @@ export const InvitePartnerScreen: React.FC = () => {
             <View style={styles.codeCard}>
               <Text style={styles.codeLabel}>Invitation Code</Text>
               <View style={styles.codeBox}>
-                <Text style={styles.code}>{invitation.token}</Text>
+                <Text style={styles.code} numberOfLines={3} adjustsFontSizeToFit>
+                  {invitation.token}
+                </Text>
               </View>
               <Text style={styles.expiry}>
                 Expires: {new Date(invitation.expires_at).toLocaleDateString()}
@@ -265,10 +267,11 @@ const styles = StyleSheet.create({
   },
   code: {
     fontWeight: '700',
-    fontSize: 24,
+    fontSize: 20,
     color: '#EC4899',
     textAlign: 'center',
-    letterSpacing: 2,
+    letterSpacing: 1,
+    flexWrap: 'wrap',
   },
   expiry: {
     fontSize: 14,

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import RedirectResponse
 
 from app.services.auth import get_auth_service, AuthService
-from app.core.models import GoogleAuthURL, LoginResponse, UserResponse, RegisterRequest, LoginRequest, User, CalendarStatusResponse
+from app.core.models import GoogleAuthURL, GoogleOAuthCodeExchangeRequest, LoginResponse, UserResponse, RegisterRequest, LoginRequest, User, CalendarStatusResponse
 from app.core.dependencies import get_current_user, get_current_user_optional
 from app.utils.couple import get_user_couple, get_partner_id
 from app.config import settings
@@ -91,8 +91,17 @@ def initiate_google_login(
             detail=f"Invalid redirect URL: {redirect_url}"
         )
 
+    # Determine OAuth redirect URI based on platform
+    # For mobile: Use deep link so Google redirects directly to the app
+    # For web: Use backend callback URL so backend can process the code
+    if platform == "mobile":
+        oauth_redirect_uri = "dateplanner://oauth/callback"
+    else:
+        oauth_redirect_uri = settings.google_redirect_uri
+
     # Build state parameter with platform, optionally user_id, and optionally redirect_url
-    state_parts = [platform]
+    # Also include the oauth_redirect_uri so we know what to expect in the callback
+    state_parts = [platform, "oauth_redirect", base64.urlsafe_b64encode(oauth_redirect_uri.encode()).decode()]
 
     if current_user:
         state_parts.extend(["user_id", str(current_user.id)])
@@ -104,7 +113,7 @@ def initiate_google_login(
 
     state = ":".join(state_parts)
 
-    auth_url = auth_service.get_google_auth_url(state=state)
+    auth_url = auth_service.get_google_auth_url(state=state, redirect_uri=oauth_redirect_uri)
     return GoogleAuthURL(authorization_url=auth_url)
 
 
@@ -115,42 +124,48 @@ def google_callback(
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
-    Handle Google OAuth callback.
+    Handle Google OAuth callback (for web platform only).
 
-    Supports two use cases:
-    1. New user registration: No state or random state → Creates new user account
-    2. Connect calendar: state contains "user_id:xxx" → Updates existing user's google_refresh_token
+    For mobile, Google redirects directly to the app with the code, and the app
+    calls the /google/exchange-code endpoint instead.
 
     State parameter format:
-    - "{platform}" - e.g. "web" or "mobile"
-    - "{platform}:user_id:{uuid}" - e.g. "web:user_id:xxx"
-    - "{platform}:redirect:{base64_url}" - e.g. "web:redirect:aHR0cDov..."
-    - "{platform}:user_id:{uuid}:redirect:{base64_url}" - full format with all params
+    - "{platform}:oauth_redirect:{base64_uri}" - required
+    - Optional: ":user_id:{uuid}" - for calendar connection
+    - Optional: ":redirect:{base64_url}" - for app redirect after completion
 
     Args:
         code: Authorization code from Google OAuth flow
-        state: Optional state parameter that may contain platform, user_id, and redirect_url
+        state: State parameter containing platform, oauth_redirect_uri, user_id, and redirect_url
 
     Returns:
         RedirectResponse to app with token in URL
     """
     try:
         # Parse state parameter
-        platform = "mobile"  # Default to mobile for backward compatibility
+        platform = "web"  # This endpoint should only be used for web
         current_user = None
         custom_redirect_url = None
+        oauth_redirect_uri = settings.google_redirect_uri
 
         if state:
             parts = state.split(":")
 
             # Extract platform (first part)
             if len(parts) >= 1:
-                platform = parts[0] if parts[0] in ["web", "mobile"] else "mobile"
+                platform = parts[0] if parts[0] in ["web", "mobile"] else "web"
 
-            # Parse remaining parts for user_id and redirect
+            # Parse remaining parts for oauth_redirect, user_id, and redirect
             i = 1
             while i < len(parts):
-                if parts[i] == "user_id" and i + 1 < len(parts):
+                if parts[i] == "oauth_redirect" and i + 1 < len(parts):
+                    # Extract and decode OAuth redirect URI
+                    try:
+                        oauth_redirect_uri = base64.urlsafe_b64decode(parts[i + 1]).decode()
+                    except Exception:
+                        pass
+                    i += 2
+                elif parts[i] == "user_id" and i + 1 < len(parts):
                     # Extract user_id
                     from uuid import UUID
                     try:
@@ -169,8 +184,8 @@ def google_callback(
                 else:
                     i += 1
 
-        # Handle OAuth callback
-        result = auth_service.handle_oauth_callback(code, current_user)
+        # Handle OAuth callback with the same redirect URI used in authorization
+        result = auth_service.handle_oauth_callback(code, current_user, redirect_uri=oauth_redirect_uri)
 
         # Determine redirect URL
         # Priority: custom_redirect_url > platform-based default
@@ -181,7 +196,7 @@ def google_callback(
             # Default mobile deep link
             base_url = "dateplanner://"
         else:
-            # Fallback to localhost for web (should not reach here if frontend sends redirect)
+            # Fallback to localhost for web
             base_url = "http://localhost:8081"
 
         # Build final redirect URL with parameters
@@ -208,6 +223,78 @@ def google_callback(
 
         redirect_url = f"{base_url}/oauth/callback?error={error_msg}"
         return RedirectResponse(url=redirect_url)
+
+
+@router.post("/google/exchange-code", response_model=LoginResponse)
+def exchange_google_oauth_code(
+    request: GoogleOAuthCodeExchangeRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Exchange Google OAuth authorization code for access token (mobile platforms).
+
+    When using mobile platforms, Google redirects directly to the app (dateplanner://oauth/callback?code=xxx&state=yyy).
+    The mobile app captures this deep link and calls this endpoint to exchange the code for a JWT token.
+
+    Args:
+        request: Contains the authorization code and state from the OAuth callback
+
+    Returns:
+        LoginResponse with JWT token and user information
+
+    Raises:
+        400: If code exchange fails or state is invalid
+        500: If authentication fails
+    """
+    try:
+        # Parse state parameter to extract oauth_redirect_uri and user_id
+        oauth_redirect_uri = "dateplanner://oauth/callback"  # Default for mobile
+        current_user = None
+
+        if request.state:
+            parts = request.state.split(":")
+
+            # Parse state for oauth_redirect and user_id
+            i = 1  # Skip platform (first part)
+            while i < len(parts):
+                if parts[i] == "oauth_redirect" and i + 1 < len(parts):
+                    try:
+                        oauth_redirect_uri = base64.urlsafe_b64decode(parts[i + 1]).decode()
+                    except Exception:
+                        pass
+                    i += 2
+                elif parts[i] == "user_id" and i + 1 < len(parts):
+                    from uuid import UUID
+                    try:
+                        user_id = UUID(parts[i + 1])
+                        current_user = auth_service.get_user_by_id(user_id)
+                    except Exception:
+                        pass
+                    i += 2
+                else:
+                    i += 1
+
+        # Exchange code for tokens using the same redirect URI
+        result = auth_service.handle_oauth_callback(request.code, current_user, redirect_uri=oauth_redirect_uri)
+
+        # Return the result
+        if isinstance(result, dict):
+            # Existing user connecting calendar
+            raise HTTPException(
+                status_code=status.HTTP_200_OK,
+                detail=result["message"]
+            )
+        else:
+            # New user - return login response
+            return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to exchange OAuth code: {str(e)}"
+        )
 
 
 @router.get("/me", response_model=UserResponse)

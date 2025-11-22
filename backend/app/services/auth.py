@@ -38,18 +38,22 @@ class AuthService(AbstractService):
     def __init__(self):
         self.db = get_db()
 
-    def get_google_auth_url(self, state: Optional[str] = None) -> str:
+    def get_google_auth_url(self, state: Optional[str] = None, redirect_uri: Optional[str] = None) -> str:
         """
         Generate Google OAuth authorization URL.
 
         Args:
             state: Optional state parameter for CSRF protection
+            redirect_uri: Optional custom redirect URI (for platform-specific flows)
 
         Returns:
             Authorization URL to redirect user to
         """
         if state is None:
             state = secrets.token_urlsafe(32)
+
+        # Use custom redirect URI if provided, otherwise use default from settings
+        oauth_redirect_uri = redirect_uri or settings.google_redirect_uri
 
         flow = Flow.from_client_config(
             client_config={
@@ -58,11 +62,11 @@ class AuthService(AbstractService):
                     "client_secret": settings.google_client_secret,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [settings.google_redirect_uri]
+                    "redirect_uris": [oauth_redirect_uri]
                 }
             },
             scopes=SCOPES,
-            redirect_uri=settings.google_redirect_uri
+            redirect_uri=oauth_redirect_uri
         )
 
         authorization_url, _ = flow.authorization_url(
@@ -74,7 +78,7 @@ class AuthService(AbstractService):
 
         return authorization_url
 
-    def handle_oauth_callback(self, code: str, current_user: Optional[User] = None) -> Union[LoginResponse, Dict]:
+    def handle_oauth_callback(self, code: str, current_user: Optional[User] = None, redirect_uri: Optional[str] = None) -> Union[LoginResponse, Dict]:
         """
         Handle OAuth callback, exchange code for tokens, and create/update user.
 
@@ -85,12 +89,16 @@ class AuthService(AbstractService):
         Args:
             code: Authorization code from Google OAuth callback
             current_user: Optional - if provided, connects calendar to this user
+            redirect_uri: Optional - must match the redirect URI used in authorization URL
 
         Returns:
             - If new user: LoginResponse with access token and user info
             - If existing user: Dict with success message
         """
         # Exchange authorization code for tokens
+        # Must use the same redirect URI as in the authorization URL
+        oauth_redirect_uri = redirect_uri or settings.google_redirect_uri
+
         flow = Flow.from_client_config(
             client_config={
                 "web": {
@@ -98,11 +106,11 @@ class AuthService(AbstractService):
                     "client_secret": settings.google_client_secret,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [settings.google_redirect_uri]
+                    "redirect_uris": [oauth_redirect_uri]
                 }
             },
             scopes=SCOPES,
-            redirect_uri=settings.google_redirect_uri
+            redirect_uri=oauth_redirect_uri
         )
 
         flow.fetch_token(code=code)

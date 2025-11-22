@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Text, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,6 +40,14 @@ export const HomeScreen: React.FC = () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleFlowersPress = () => {
+    Alert.alert(
+      'Coming Soon!',
+      'Flower delivery and reminder features will be available soon.',
+      [{ text: 'OK', style: 'default' }]
+    );
   };
 
   if (isLoading && !partner && !calendarStatus) {
@@ -118,7 +126,11 @@ export const HomeScreen: React.FC = () => {
            {/* Quick Actions*/}
            <Text style={styles.sectionTitle}>Quick Actions</Text>
            <View style={styles.quickActionsGrid}>
-             <TouchableOpacity style={[styles.quickActionCard, styles.flowersCard]} activeOpacity={0.7}>
+             <TouchableOpacity
+               style={[styles.quickActionCard, styles.flowersCard]}
+               activeOpacity={0.7}
+               onPress={handleFlowersPress}
+             >
                <Text style={styles.quickActionIcon}>🌸</Text>
                <Text style={styles.quickActionTitle}>Flowers</Text>
                <Text style={styles.quickActionSubtitle}>Set reminders</Text>
@@ -126,7 +138,7 @@ export const HomeScreen: React.FC = () => {
  
              <TouchableOpacity
                style={[styles.quickActionCard, styles.scheduleCard]}
-               onPress={() => navigation.navigate('Profile')}
+               onPress={() => navigation.navigate('Schedule')}
                activeOpacity={0.7}
              >
                <Text style={styles.quickActionIcon}>📅</Text>
@@ -187,7 +199,11 @@ export const HomeScreen: React.FC = () => {
           {/* Quick Actions - Full */}
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            <TouchableOpacity style={[styles.quickActionCard, styles.flowersCard]} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={[styles.quickActionCard, styles.flowersCard]}
+              activeOpacity={0.7}
+              onPress={handleFlowersPress}
+            >
               <Text style={styles.quickActionIcon}>🌸</Text>
               <Text style={styles.quickActionTitle}>Flowers</Text>
               <Text style={styles.quickActionSubtitle}>Renew in 3d</Text>
@@ -195,7 +211,7 @@ export const HomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={[styles.quickActionCard, styles.scheduleCard]}
-              onPress={() => navigation.navigate('Profile')}
+              onPress={() => navigation.navigate('Schedule')}
               activeOpacity={0.7}
             >
               <Text style={styles.quickActionIcon}>📅</Text>

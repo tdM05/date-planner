@@ -69,6 +69,22 @@ export const authAPI = {
   },
 
   /**
+   * Exchange Google OAuth code for access token (mobile platform)
+   * @param code - Authorization code from Google OAuth callback
+   * @param state - State parameter from OAuth flow
+   */
+  exchangeGoogleOAuthCode: async (
+    code: string,
+    state: string
+  ): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>(
+      ENDPOINTS.AUTH_GOOGLE_EXCHANGE_CODE,
+      { code, state }
+    );
+    return response.data;
+  },
+
+  /**
    * Get calendar connection status for user and partner
    */
   getCalendarStatus: async (): Promise<CalendarStatus> => {

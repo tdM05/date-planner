@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Platform, Text, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from '../store';
 import { authAPI } from '../api';
 import { useNavigation } from '@react-navigation/native';
@@ -40,46 +41,72 @@ export const GoogleOAuthScreen: React.FC = () => {
         return;
       }
 
-      // On mobile, open browser for OAuth
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'dateplanner://oauth/callback'
-      );
+      // On mobile, open browser for OAuth and wait for deep link callback
+      console.log('[GoogleOAuth] Opening browser with URL:', authUrl);
+      await WebBrowser.openBrowserAsync(authUrl);
 
-      console.log('[GoogleOAuth] WebBrowser result:', result);
-
-      if (result.type === 'success' && result.url) {
-        console.log('[GoogleOAuth] Success! Callback URL:', result.url);
-        // Extract token from callback URL
-        // The backend should redirect to: dateplanner://oauth/callback?token=<jwt_token>
-        const url = new URL(result.url);
-        const token = url.searchParams.get('token');
-
-        if (token) {
-          console.log('[GoogleOAuth] Token extracted, setting...');
-          await setToken(token);
-          // Navigation will happen automatically
-        } else {
-          console.error('[GoogleOAuth] No token in URL. URL params:', url.searchParams.toString());
-          setError('No token received from OAuth callback');
-        }
-      } else if (result.type === 'cancel') {
-        console.log('[GoogleOAuth] User cancelled');
-        navigation.goBack();
-      } else {
-        console.log('[GoogleOAuth] Unexpected result type:', result.type);
-        setError(`OAuth flow ended with type: ${result.type}`);
-      }
+      // The browser will redirect to dateplanner://oauth/callback?code=xxx&state=yyy
+      // and our app will handle it via deep linking in the useEffect below
     } catch (err: any) {
       console.error('[GoogleOAuth] Error:', err);
       setError(err.message || 'OAuth failed');
-    } finally {
       setIsLoading(false);
     }
   };
 
+  // Set up deep link listener for OAuth callback on mobile
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      initiateOAuth();
+      return;
+    }
+
+    // Mobile deep link handling
+    const handleDeepLink = async (event: { url: string }) => {
+      console.log('[GoogleOAuth] Deep link received:', event.url);
+
+      try {
+        const url = new URL(event.url);
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+        const errorParam = url.searchParams.get('error');
+
+        if (errorParam) {
+          console.error('[GoogleOAuth] Error from OAuth:', errorParam);
+          setError(decodeURIComponent(errorParam));
+          setIsLoading(false);
+          return;
+        }
+
+        if (code && state) {
+          console.log('[GoogleOAuth] Exchanging code for token...');
+          // Exchange code for token via backend
+          const response = await authAPI.exchangeGoogleOAuthCode(code, state);
+          console.log('[GoogleOAuth] Token received, setting...');
+          await setToken(response.access_token);
+          // Navigation will happen automatically
+        } else {
+          console.error('[GoogleOAuth] Missing code or state in deep link');
+          setError('OAuth callback missing required parameters');
+          setIsLoading(false);
+        }
+      } catch (err: any) {
+        console.error('[GoogleOAuth] Error handling deep link:', err);
+        setError(err.message || 'Failed to process OAuth callback');
+        setIsLoading(false);
+      }
+    };
+
+    // Add deep link listener
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Start OAuth flow
     initiateOAuth();
+
+    // Cleanup
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   if (error) {

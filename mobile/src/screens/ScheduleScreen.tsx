@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { calendarAPI, CalendarEvent, FreeSlot } from '../api/calendar';
+import { useCoupleStore } from '../store';
 import { format, parseISO } from 'date-fns';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const ScheduleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const { calendarStatus, fetchCalendarStatus } = useCoupleStore();
   const [myEvents, setMyEvents] = useState<CalendarEvent[]>([]);
   const [partnerEvents, setPartnerEvents] = useState<CalendarEvent[]>([]);
   const [freeSlots, setFreeSlots] = useState<FreeSlot[]>([]);
@@ -65,18 +68,58 @@ export const ScheduleScreen: React.FC = () => {
   // Load data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      setIsLoading(true);
-      loadScheduleData();
+      const loadData = async () => {
+        setIsLoading(true);
+        // Fetch calendar status first
+        await fetchCalendarStatus();
+        // Only load schedule if calendar is connected
+        if (calendarStatus?.user_connected) {
+          await loadScheduleData();
+        } else {
+          setIsLoading(false);
+        }
+      };
+      loadData();
     }, [])
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadScheduleData();
+    await fetchCalendarStatus();
+    if (calendarStatus?.user_connected) {
+      await loadScheduleData();
+    } else {
+      setRefreshing(false);
+    }
   };
 
   if (isLoading) {
     return <LoadingSpinner message="Loading schedule..." />;
+  }
+
+  // Show "not connected" state if user hasn't connected calendar
+  if (!calendarStatus?.user_connected) {
+    return (
+      <LinearGradient
+        colors={['#F5E6F8', '#FDEEF5']}
+        style={[styles.container, { paddingTop: insets.top }]}
+      >
+        <View style={styles.notConnectedContainer}>
+          <Text style={styles.notConnectedIcon}>📅</Text>
+          <Text style={styles.notConnectedTitle}>Calendar Not Connected</Text>
+          <Text style={styles.notConnectedMessage}>
+            Connect your Google Calendar to view your schedule and find mutual free time with your partner.
+          </Text>
+          <TouchableOpacity
+            style={styles.connectButton}
+            onPress={() => navigation.navigate('Profile' as never)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.connectButtonText}>Connect Calendar</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
   }
 
   return (
@@ -316,5 +359,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     marginTop: 4,
+  },
+  notConnectedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  notConnectedIcon: {
+    fontSize: 72,
+    marginBottom: 24,
+  },
+  notConnectedTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  notConnectedMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  connectButton: {
+    backgroundColor: '#EC4899',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#EC4899',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  connectButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

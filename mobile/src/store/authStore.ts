@@ -75,7 +75,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('[AuthStore] Registration successful');
     } catch (error: any) {
       console.error('[AuthStore] Registration failed:', error);
-      set({ error: error.message || 'Registration failed', isAuthenticated: false });
+      // Set error but don't change isAuthenticated (should already be false)
+      // Changing it might cause navigation stack to reset
+      set({ error: error.message || 'Registration failed' });
       throw error;
     } finally {
       set({ isLoading: false });
