@@ -90,7 +90,7 @@ export const ScheduleScreen: React.FC = () => {
       >
         <Text style={styles.headerTitle}>Schedule</Text>
         <Text style={styles.headerSubtitle}>
-          Next 7 days • {freeSlots.length} free slots
+          {`Next 7 days • ${freeSlots.length} free slots`}
         </Text>
       </LinearGradient>
 
@@ -126,12 +126,12 @@ export const ScheduleScreen: React.FC = () => {
                   </Text>
                   <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>
-                      {slot.duration_hours}h free
+                      {`${slot.duration_hours}h free`}
                     </Text>
                   </View>
                 </View>
                 <Text style={styles.freeSlotTimeRange}>
-                  {format(parseISO(slot.start), 'h:mm a')} - {format(parseISO(slot.end), 'h:mm a')}
+                  {`${format(parseISO(slot.start), 'h:mm a')} - ${format(parseISO(slot.end), 'h:mm a')}`}
                 </Text>
               </View>
             ))
@@ -140,7 +140,7 @@ export const ScheduleScreen: React.FC = () => {
 
         {/* My Events Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📅 {myName}'s Schedule</Text>
+          <Text style={styles.sectionTitle}>{`📅 ${myName}'s Schedule`}</Text>
           {myEvents.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyText}>No events scheduled</Text>
@@ -150,7 +150,7 @@ export const ScheduleScreen: React.FC = () => {
               <View key={index} style={[styles.eventCard, styles.myEventCard]}>
                 <Text style={styles.eventSummary}>{event.summary}</Text>
                 <Text style={styles.eventTime}>
-                  {format(parseISO(event.start), 'EEE, MMM d • h:mm a')}
+                  {`${format(parseISO(event.start), 'EEE, MMM d')} • ${format(parseISO(event.start), 'h:mm a')}`}
                 </Text>
                 {event.description && (
                   <Text style={styles.eventDescription}>{event.description}</Text>
@@ -163,7 +163,7 @@ export const ScheduleScreen: React.FC = () => {
         {/* Partner Events Section */}
         {partnerName && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>💗 {partnerName}'s Schedule</Text>
+            <Text style={styles.sectionTitle}>{`💗 ${partnerName}'s Schedule`}</Text>
             {partnerEvents.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>No events scheduled</Text>
@@ -173,7 +173,7 @@ export const ScheduleScreen: React.FC = () => {
                 <View key={index} style={[styles.eventCard, styles.partnerEventCard]}>
                   <Text style={styles.eventSummary}>{event.summary}</Text>
                   <Text style={styles.eventTime}>
-                    {format(parseISO(event.start), 'EEE, MMM d • h:mm a')}
+                    {`${format(parseISO(event.start), 'EEE, MMM d')} • ${format(parseISO(event.start), 'h:mm a')}`}
                   </Text>
                   {event.description && (
                     <Text style={styles.eventDescription}>{event.description}</Text>
