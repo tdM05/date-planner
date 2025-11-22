@@ -98,7 +98,7 @@ export const HomeScreen: React.FC = () => {
                activeOpacity={0.8}
              >
                <LinearGradient
-                 colors={['#EC4899', '#D946EF']}
+                 colors={['#e780b3ff', '#e79f2cff']}
                  start={{ x: 0, y: 0 }}
                  end={{ x: 1, y: 0 }}
                  style={styles.buttonGradient}
@@ -181,7 +181,8 @@ export const HomeScreen: React.FC = () => {
           </View>
 
           {/* Quick Actions - Full */}
-
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
             <TouchableOpacity style={[styles.quickActionCard, styles.flowersCard]} activeOpacity={0.7}>
               <Text style={styles.quickActionIcon}>🌸</Text>
               <Text style={styles.quickActionTitle}>Flowers</Text>
@@ -197,6 +198,7 @@ export const HomeScreen: React.FC = () => {
               <Text style={styles.quickActionTitle}>Schedule</Text>
               <Text style={styles.quickActionSubtitle}>Sync now</Text>
             </TouchableOpacity>
+          </View>
 
           {(!calendarStatus?.user_connected ||
             !calendarStatus?.partner_connected) && (

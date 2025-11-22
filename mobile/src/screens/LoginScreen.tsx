@@ -108,7 +108,6 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Decorative circles like welcome screen */}
       <View style={[styles.decorativeCircle, styles.circleTopLeft]} />
       <View style={[styles.decorativeCircle, styles.circleTopRight]} />
 
