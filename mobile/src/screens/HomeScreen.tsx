@@ -162,7 +162,7 @@ export const HomeScreen: React.FC = () => {
             </Text>
             <TouchableOpacity
               style={styles.dateButton}
-              onPress={() => navigation.navigate('DateGenerator')}
+              onPress={() => navigation.navigate('Dates')}
               disabled={
                 !calendarStatus?.user_connected ||
                 !calendarStatus?.partner_connected

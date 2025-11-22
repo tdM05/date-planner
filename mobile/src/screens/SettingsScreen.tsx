@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, TouchableOpacity, Text, Modal } from 'react-native';
 import { Snackbar } from 'react-native-paper';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
@@ -18,6 +18,7 @@ export const SettingsScreen: React.FC = () => {
 
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     fetchCalendarStatus();
@@ -61,29 +62,20 @@ export const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    console.log('[Settings] Logout button clicked');
+  const handleLogoutPress = () => {
+    setShowLogoutConfirm(true);
+  };
 
-    // Web-compatible confirmation
-    const confirmed = Platform.OS === 'web'
-      ? window.confirm('Are you sure you want to logout?')
-      : await new Promise<boolean>((resolve) => {
-          Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Logout', style: 'destructive', onPress: () => resolve(true) },
-            ]
-          );
-        });
+  const handleLogoutConfirm = async () => {
+    console.log('[Settings] User confirmed logout');
+    setShowLogoutConfirm(false);
+    await logout();
+    console.log('[Settings] Logout complete');
+    // Navigation will happen automatically
+  };
 
-    if (confirmed) {
-      console.log('[Settings] User confirmed logout');
-      await logout();
-      console.log('[Settings] Logout complete');
-      // Navigation will happen automatically
-    }
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -126,8 +118,12 @@ export const SettingsScreen: React.FC = () => {
                 <Text style={styles.iconText}>💕</Text>
               </View>
               <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle}>{partner.full_name}</Text>
-                <Text style={styles.cardDescription}>{partner.email}</Text>
+                <Text style={styles.cardTitle}>
+                  {partner.full_name || 'Partner'}
+                </Text>
+                <Text style={styles.cardDescription}>
+                  {partner.email || 'Connected'}
+                </Text>
               </View>
             </View>
           </View>
@@ -206,12 +202,45 @@ export const SettingsScreen: React.FC = () => {
         {/* Logout Button */}
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={handleLogout}
+          onPress={handleLogoutPress}
           activeOpacity={0.7}
         >
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={showLogoutConfirm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleLogoutCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Logout</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to logout?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={handleLogoutCancel}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleLogoutConfirm}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalConfirmText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Snackbar
         visible={!!message}
@@ -390,5 +419,69 @@ const styles = StyleSheet.create({
   },
   snackbar: {
     backgroundColor: '#EC4899',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: '#DC2626',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  modalConfirmText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
