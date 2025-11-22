@@ -78,7 +78,8 @@ export const ResultsScreen: React.FC = () => {
   }
 
   const handleGenerateNew = () => {
-    clearDatePlan();
+    // Don't clear - just go back to generate a new one
+    // The current plan will be saved in history
     navigation.goBack();
   };
 
