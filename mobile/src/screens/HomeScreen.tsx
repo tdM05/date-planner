@@ -124,9 +124,9 @@ export const HomeScreen: React.FC = () => {
                <Text style={styles.quickActionSubtitle}>Set reminders</Text>
              </TouchableOpacity>
  
-             <TouchableOpacity 
-               style={[styles.quickActionCard, styles.scheduleCard]} 
-               onPress={() => navigation.navigate('Settings')}
+             <TouchableOpacity
+               style={[styles.quickActionCard, styles.scheduleCard]}
+               onPress={() => navigation.navigate('Schedule')}
                activeOpacity={0.7}
              >
                <Text style={styles.quickActionIcon}>📅</Text>
@@ -190,7 +190,7 @@ export const HomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={[styles.quickActionCard, styles.scheduleCard]}
-              onPress={() => navigation.navigate('Settings')}
+              onPress={() => navigation.navigate('Schedule')}
               activeOpacity={0.7}
             >
               <Text style={styles.quickActionIcon}>📅</Text>
