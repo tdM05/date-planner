@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDateStore } from '../store';
 import { format } from 'date-fns';
 import { DatePickerModal } from '../components/DatePickerModal';
+import { DateGenerationProgress } from '../components/DateGenerationProgress';
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
@@ -132,13 +133,9 @@ export const DateGeneratorScreen: React.FC = () => {
         >
           {isGenerating ? 'Generating...' : 'Generate Date Ideas'}
         </Button>
-
-        {isGenerating && (
-          <Text variant="bodySmall" style={styles.loadingText}>
-            This may take 5-10 seconds...
-          </Text>
-        )}
       </ScrollView>
+
+      <DateGenerationProgress visible={isGenerating} />
 
       <DatePickerModal
         visible={showStartDatePicker}
@@ -229,9 +226,5 @@ const styles = StyleSheet.create({
   },
   button: {
     marginVertical: 16,
-  },
-  loadingText: {
-    textAlign: 'center',
-    color: '#666',
   },
 });

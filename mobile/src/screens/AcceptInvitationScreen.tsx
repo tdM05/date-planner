@@ -27,10 +27,10 @@ export const AcceptInvitationScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text variant="headlineSmall" style={styles.title}>
-          Accept Invitation
+          💕 Accept Invitation 💕
         </Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Enter the invitation code your partner shared with you.
+          Enter the invitation code your partner shared with you
         </Text>
 
         <TextInput
@@ -77,7 +77,7 @@ export const AcceptInvitationScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5E6F8',
   },
   content: {
     padding: 20,
@@ -85,11 +85,13 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 8,
     textAlign: 'center',
+    color: '#EC4899',
+    fontWeight: '700',
   },
   subtitle: {
     marginBottom: 24,
     textAlign: 'center',
-    color: '#666',
+    color: '#A855F7',
   },
   input: {
     marginBottom: 16,

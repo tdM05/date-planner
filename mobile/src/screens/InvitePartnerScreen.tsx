@@ -44,10 +44,10 @@ export const InvitePartnerScreen: React.FC = () => {
         // Invite form
         <View style={styles.content}>
           <Text variant="headlineSmall" style={styles.title}>
-            Invite Your Partner
+            💕 Invite Your Partner 💕
           </Text>
           <Text variant="bodyMedium" style={styles.subtitle}>
-            Enter your partner's email to send them an invitation.
+            Enter your partner's email to send them an invitation
           </Text>
 
           <TextInput
@@ -75,13 +75,13 @@ export const InvitePartnerScreen: React.FC = () => {
         // Invitation created
         <View style={styles.content}>
           <Text variant="headlineSmall" style={styles.title}>
-            Invitation Sent!
+            💝 Invitation Sent! 💝
           </Text>
 
           <Card style={styles.card}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                Invitation Code
+                💕 Invitation Code 💕
               </Text>
               <Text variant="bodyLarge" style={styles.code}>
                 {invitation.token}
@@ -124,7 +124,7 @@ export const InvitePartnerScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5E6F8',
   },
   content: {
     padding: 20,
@@ -132,11 +132,13 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 8,
     textAlign: 'center',
+    color: '#EC4899',
+    fontWeight: '700',
   },
   subtitle: {
     marginBottom: 24,
     textAlign: 'center',
-    color: '#666',
+    color: '#A855F7',
   },
   input: {
     marginBottom: 16,
@@ -146,20 +148,29 @@ const styles = StyleSheet.create({
   },
   card: {
     marginVertical: 16,
+    backgroundColor: '#FFF5FB',
+    borderWidth: 2,
+    borderColor: '#FDE2F3',
   },
   cardTitle: {
     marginBottom: 8,
+    color: '#EC4899',
+    fontWeight: '600',
   },
   code: {
     fontWeight: 'bold',
     marginVertical: 8,
     padding: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
     textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#EC4899',
+    color: '#EC4899',
+    fontSize: 18,
   },
   expiry: {
-    color: '#999',
+    color: '#A855F7',
     textAlign: 'center',
   },
   instructions: {
