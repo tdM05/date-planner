@@ -10,7 +10,6 @@ import { Home, Calendar, Heart, User } from 'lucide-react-native';
 
 const Tab = createBottomTabNavigator();
 
-// Profile icon with notification dot
 const ProfileIcon: React.FC<{ color: string; focused: boolean }> = ({ color, focused }) => {
   const { hasCouple } = useCoupleStore();
   
