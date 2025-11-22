@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Platform, Text, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 import { useAuthStore } from '../store';
 import { authAPI } from '../api';
 import { useNavigation } from '@react-navigation/native';
@@ -41,12 +40,51 @@ export const GoogleOAuthScreen: React.FC = () => {
         return;
       }
 
-      // On mobile, open browser for OAuth and wait for deep link callback
-      console.log('[GoogleOAuth] Opening browser with URL:', authUrl);
-      await WebBrowser.openBrowserAsync(authUrl);
+      // On mobile, use openAuthSessionAsync for in-app browser
+      // This properly handles the OAuth redirect back to the app
+      console.log('[GoogleOAuth] Opening auth session with URL:', authUrl);
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        'dateplanner://oauth/callback'
+      );
 
-      // The browser will redirect to dateplanner://oauth/callback?code=xxx&state=yyy
-      // and our app will handle it via deep linking in the useEffect below
+      console.log('[GoogleOAuth] Auth session result:', result);
+
+      if (result.type === 'success' && result.url) {
+        console.log('[GoogleOAuth] Success! Callback URL:', result.url);
+        // Extract token from callback URL
+        const url = new URL(result.url);
+        const token = url.searchParams.get('token');
+        const success = url.searchParams.get('success');
+        const errorParam = url.searchParams.get('error');
+
+        if (errorParam) {
+          console.error('[GoogleOAuth] Error from callback:', errorParam);
+          setError(decodeURIComponent(errorParam));
+          setIsLoading(false);
+          return;
+        }
+
+        if (token) {
+          console.log('[GoogleOAuth] Token received, setting...');
+          await setToken(token);
+          // Navigation will happen automatically via AppNavigator
+        } else if (success === 'true') {
+          console.log('[GoogleOAuth] Calendar connected successfully');
+          navigation.goBack();
+        } else {
+          console.error('[GoogleOAuth] No token in callback URL');
+          setError('No token received from OAuth');
+          setIsLoading(false);
+        }
+      } else if (result.type === 'cancel') {
+        console.log('[GoogleOAuth] User cancelled OAuth');
+        navigation.goBack();
+      } else {
+        console.log('[GoogleOAuth] Unexpected result type:', result.type);
+        setError(`OAuth ended with type: ${result.type}`);
+        setIsLoading(false);
+      }
     } catch (err: any) {
       console.error('[GoogleOAuth] Error:', err);
       setError(err.message || 'OAuth failed');
@@ -54,61 +92,9 @@ export const GoogleOAuthScreen: React.FC = () => {
     }
   };
 
-  // Set up deep link listener for OAuth callback on mobile
+  // Start OAuth flow when component mounts
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      initiateOAuth();
-      return;
-    }
-
-    // Mobile deep link handling
-    const handleDeepLink = async (event: { url: string }) => {
-      console.log('[GoogleOAuth] Deep link received:', event.url);
-
-      try {
-        const url = new URL(event.url);
-        const token = url.searchParams.get('token');
-        const success = url.searchParams.get('success');
-        const errorParam = url.searchParams.get('error');
-
-        if (errorParam) {
-          console.error('[GoogleOAuth] Error from OAuth:', errorParam);
-          setError(decodeURIComponent(errorParam));
-          setIsLoading(false);
-          return;
-        }
-
-        if (token) {
-          console.log('[GoogleOAuth] Token received from backend, setting...');
-          // Backend already exchanged code for token, just use it
-          await setToken(token);
-          // Navigation will happen automatically
-        } else if (success === 'true') {
-          console.log('[GoogleOAuth] Calendar connected successfully');
-          // Calendar connection success (for existing users)
-          navigation.goBack();
-        } else {
-          console.error('[GoogleOAuth] Missing token in deep link');
-          setError('OAuth callback missing token');
-          setIsLoading(false);
-        }
-      } catch (err: any) {
-        console.error('[GoogleOAuth] Error handling deep link:', err);
-        setError(err.message || 'Failed to process OAuth callback');
-        setIsLoading(false);
-      }
-    };
-
-    // Add deep link listener
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    // Start OAuth flow
     initiateOAuth();
-
-    // Cleanup
-    return () => {
-      subscription.remove();
-    };
   }, []);
 
   if (error) {

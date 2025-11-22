@@ -188,10 +188,12 @@ def google_callback(
         if isinstance(result, dict):
             # Existing user connecting calendar
             redirect_url = f"{base_url}/oauth/callback?success=true"
+            print(f"[OAuth] Redirecting to (calendar connect): {redirect_url}")
         else:
             # New user - include token
             token = result.access_token
             redirect_url = f"{base_url}/oauth/callback?token={token}"
+            print(f"[OAuth] Redirecting to (new user): {redirect_url}")
 
         return RedirectResponse(url=redirect_url)
     except Exception as e:
@@ -207,6 +209,7 @@ def google_callback(
             base_url = "http://localhost:8081"
 
         redirect_url = f"{base_url}/oauth/callback?error={error_msg}"
+        print(f"[OAuth] Redirecting to (error): {redirect_url}")
         return RedirectResponse(url=redirect_url)
 
 

@@ -16,6 +16,31 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const Stack = createNativeStackNavigator();
 
+// Linking configuration for web URLs
+const linking = {
+  prefixes: ['https://', 'http://', 'dateplanner://'],
+  config: {
+    screens: {
+      Welcome: '',
+      Login: 'login',
+      Register: 'register',
+      GoogleOAuth: 'google-oauth',
+      OAuthCallback: 'oauth/callback',
+      MainTabs: {
+        path: 'app',
+        screens: {
+          Home: 'home',
+          Schedule: 'schedule',
+          Dates: 'dates',
+          Profile: 'profile',
+        },
+      },
+      DateGenerator: 'date-generator',
+      Results: 'results',
+    },
+  },
+};
+
 export const AppNavigator: React.FC = () => {
   const { isAuthenticated, isLoading, loadStoredAuth } = useAuthStore();
   const { reset: resetCouple } = useCoupleStore();
@@ -38,7 +63,7 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
