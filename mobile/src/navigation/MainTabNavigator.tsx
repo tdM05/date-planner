@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen } from '../screens';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
 import { DateGeneratorScreen } from '../screens/DateGeneratorScreen';
@@ -12,11 +13,11 @@ const Tab = createBottomTabNavigator();
 
 const ProfileIcon: React.FC<{ color: string; focused: boolean }> = ({ color, focused }) => {
   const { hasCouple } = useCoupleStore();
-  
+
   return (
     <View style={styles.iconContainer}>
-      <User 
-        size={24} 
+      <User
+        size={24}
         color={color}
         fill={focused ? '#FCE7F3' : 'none'}
       />
@@ -25,6 +26,8 @@ const ProfileIcon: React.FC<{ color: string; focused: boolean }> = ({ color, foc
 };
 
 export const MainTabNavigator: React.FC = () => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -35,8 +38,8 @@ export const MainTabNavigator: React.FC = () => {
           borderTopWidth: 1,
           borderTopColor: '#F3F4F6',
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 0 : 32,
-          height: Platform.OS === 'ios' ? 88 : 100,
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, 20),
+          height: Platform.OS === 'ios' ? 88 : 65 + Math.max(insets.bottom, 20),
           backgroundColor: '#FFFFFF',
         },
         tabBarLabelStyle: {
@@ -52,8 +55,8 @@ export const MainTabNavigator: React.FC = () => {
         component={HomeScreen}
         options={{
           tabBarIcon: ({ color, focused }) => (
-            <Home 
-              size={24} 
+            <Home
+              size={24}
               color={color}
               fill={focused ? '#FCE7F3' : 'none'}
             />
@@ -65,8 +68,8 @@ export const MainTabNavigator: React.FC = () => {
         component={ScheduleScreen}
         options={{
           tabBarIcon: ({ color, focused }) => (
-            <Calendar 
-              size={24} 
+            <Calendar
+              size={24}
               color={color}
               fill={focused ? '#FCE7F3' : 'none'}
             />
