@@ -50,7 +50,7 @@ export const OAuthCallbackScreen: React.FC = () => {
           }
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' as never }],
+            routes: [{ name: 'MainTabs' as never }],
           });
         } else if (success === 'true') {
           console.log('[OAuthCallback] Calendar connected successfully');
