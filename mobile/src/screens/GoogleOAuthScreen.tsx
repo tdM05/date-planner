@@ -22,8 +22,15 @@ export const GoogleOAuthScreen: React.FC = () => {
       const platform = Platform.OS === 'web' ? 'web' : 'mobile';
       console.log('[GoogleOAuth] Starting OAuth flow for platform:', platform);
 
-      // Get the Google OAuth URL from backend with platform parameter
-      const authUrl = await authAPI.getGoogleAuthUrl(platform);
+      // For web, pass the current origin as redirect URL for dynamic routing
+      let redirectUrl: string | undefined;
+      if (Platform.OS === 'web') {
+        redirectUrl = window.location.origin;
+        console.log('[GoogleOAuth] Using redirect URL:', redirectUrl);
+      }
+
+      // Get the Google OAuth URL from backend with platform and redirect URL
+      const authUrl = await authAPI.getGoogleAuthUrl(platform, redirectUrl);
       console.log('[GoogleOAuth] Got auth URL:', authUrl);
 
       if (Platform.OS === 'web') {

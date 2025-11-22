@@ -43,11 +43,21 @@ export const authAPI = {
   /**
    * Initiate Google OAuth login
    * @param platform - Platform type: 'web' or 'mobile' (defaults to 'web')
+   * @param redirectUrl - Optional redirect URL (defaults to current origin for web)
    */
-  getGoogleAuthUrl: async (platform: 'web' | 'mobile' = 'web'): Promise<string> => {
+  getGoogleAuthUrl: async (
+    platform: 'web' | 'mobile' = 'web',
+    redirectUrl?: string
+  ): Promise<string> => {
+    const params: { platform: string; redirect_url?: string } = { platform };
+
+    if (redirectUrl) {
+      params.redirect_url = redirectUrl;
+    }
+
     const response = await apiClient.get<GoogleOAuthResponse>(
       ENDPOINTS.AUTH_GOOGLE_LOGIN,
-      { params: { platform } }
+      { params }
     );
 
     const authUrl = response.data.authorization_url;

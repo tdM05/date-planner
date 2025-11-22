@@ -41,8 +41,11 @@ export const OAuthCallbackScreen: React.FC = () => {
         if (token) {
           console.log('[OAuthCallback] Token received, setting...');
           await setToken(token);
-          console.log('[OAuthCallback] Token set successfully, will navigate to Home');
-          // Navigation will happen automatically when auth state updates
+          console.log('[OAuthCallback] Token set successfully, navigating to Home');
+          // Force navigation to Home after successful OAuth
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 100);
         } else if (success === 'true') {
           console.log('[OAuthCallback] Calendar connected successfully');
           setTimeout(() => navigation.navigate('Settings' as never), 1000);
