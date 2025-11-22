@@ -5,16 +5,20 @@ import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore, useCoupleStore } from '../store';
 import { authAPI } from '../api';
+import { User, Calendar, UserPlus, ArrowLeft } from 'lucide-react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
+type NavigationProp = NativeStackNavigationProp<any>;
+
 export const SettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
-  const { partner, calendarStatus, fetchCalendarStatus } = useCoupleStore();
+  const { partner, hasCouple, calendarStatus, fetchCalendarStatus } = useCoupleStore();
 
   const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -33,18 +37,15 @@ export const SettingsScreen: React.FC = () => {
       const platform = Platform.OS === 'web' ? 'web' : 'mobile';
       console.log('[Settings] Connecting calendar for platform:', platform);
 
-      // Get OAuth URL for calendar connection (backend uses JWT to identify user)
       const authUrl = await authAPI.getGoogleAuthUrl(platform);
       console.log('[Settings] Got OAuth URL:', authUrl);
 
       if (Platform.OS === 'web') {
-        // On web, redirect to the OAuth URL directly
         console.log('[Settings] Redirecting to OAuth URL on web...');
         window.location.href = authUrl;
         return;
       }
 
-      // On mobile, open browser for OAuth
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
         'dateplanner://oauth/callback'
@@ -52,7 +53,6 @@ export const SettingsScreen: React.FC = () => {
 
       if (result.type === 'success') {
         setMessage('Calendar connected successfully!');
-        // Refresh calendar status
         await fetchCalendarStatus();
       }
     } catch (error: any) {
@@ -71,7 +71,6 @@ export const SettingsScreen: React.FC = () => {
     setShowLogoutConfirm(false);
     await logout();
     console.log('[Settings] Logout complete');
-    // Navigation will happen automatically
   };
 
   const handleLogoutCancel = () => {
@@ -87,47 +86,71 @@ export const SettingsScreen: React.FC = () => {
         end={{ x: 1, y: 1 }}
         style={[styles.header, { paddingTop: insets.top + 20 }]}
       >
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={24} color="#1F2937" />
+        </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Profile & Settings</Text>
-        <Text style={styles.headerSubtitle}>
-          Manage your account and preferences
-        </Text>
+        
+        {/* User Profile Card with Icon */}
+        <View style={styles.profileCard}>
+          <User size={20} color="#6B7280" style={styles.userIcon} />
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{user?.full_name}</Text>
+            <Text style={styles.profileEmail}>{user?.email}</Text>
+            <Text style={styles.profileStatus}>
+              {hasCouple ? 'Coupled profile' : 'Single profile'}
+            </Text>
+          </View>
+        </View>
       </LinearGradient>
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
       >
-        {/* Profile Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconText}>👤</Text>
+        {/* User & Partner Cards Side by Side */}
+        <View style={styles.section}>
+          <View style={styles.profileCardsContainer}>
+            {/* User Card */}
+            <View style={styles.profileCardSmall}>
+              <View style={[styles.avatarCircleSmall, styles.userAvatar]}>
+                <Text style={styles.avatarTextSmall}>
+                  {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                </Text>
+              </View>
+              <Text style={styles.profileNameSmall}>Me</Text>
             </View>
-            <View style={styles.cardHeaderText}>
-              <Text style={styles.cardTitle}>{user?.full_name || 'Unknown'}</Text>
-              <Text style={styles.cardDescription}>{user?.email || ''}</Text>
-            </View>
+
+            {/* Partner Card */}
+            {hasCouple && partner ? (
+              <View style={styles.profileCardSmall}>
+                <View style={[styles.avatarCircleSmall, styles.partnerAvatarSmall]}>
+                  <Text style={styles.avatarTextSmall}>
+                    {partner?.full_name?.charAt(0).toUpperCase() || 'P'}
+                  </Text>
+                </View>
+                <Text style={styles.profileNameSmall}>{partner?.full_name?.split(' ')[0]}</Text>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.profileCardSmall}
+                onPress={() => navigation.navigate('InvitePartner')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.avatarCircleSmall, styles.emptyAvatarSmall]}>
+                  <UserPlus size={32} color="#D1D5DB" />
+                </View>
+                <Text style={styles.profileNameEmpty}>Invite Partner</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-
-        {/* Partner Card */}
-        {partner && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.iconCircle}>
-                <Text style={styles.iconText}>💕</Text>
-              </View>
-              <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle}>
-                  {partner.full_name || 'Partner'}
-                </Text>
-                <Text style={styles.cardDescription}>
-                  {partner.email || 'Connected'}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Calendar Section */}
         <Text style={styles.sectionTitle}>Google Calendar</Text>
@@ -135,7 +158,9 @@ export const SettingsScreen: React.FC = () => {
         <View style={styles.card}>
           <View style={styles.statusRow}>
             <View style={styles.statusLeft}>
-              <Text style={styles.statusIcon}>📅</Text>
+              <View style={styles.statusIconContainer}>
+                <Calendar size={20} color="#6B7280" />
+              </View>
               <View>
                 <Text style={styles.statusTitle}>Your Calendar</Text>
                 <Text style={styles.statusDescription}>
@@ -153,7 +178,9 @@ export const SettingsScreen: React.FC = () => {
           {partner && (
             <View style={[styles.statusRow, { marginTop: 16 }]}>
               <View style={styles.statusLeft}>
-                <Text style={styles.statusIcon}>💗</Text>
+                <View style={styles.statusIconContainer}>
+                  <Calendar size={20} color="#6B7280" />
+                </View>
                 <View>
                   <Text style={styles.statusTitle}>Partner's Calendar</Text>
                   <Text style={styles.statusDescription}>
@@ -177,7 +204,7 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#EC4899', '#D946EF']}
+                colors={['#e780b3ff', '#e79f2cff']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
@@ -261,20 +288,48 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 20,
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#4B5563',
-    fontWeight: '400',
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    padding: 16,
+  },
+  userIcon: {
+    marginTop: 2,
+    marginRight: 12,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  profileStatus: {
+    fontSize: 13,
+    color: '#9CA3AF',
   },
   scrollView: {
     flex: 1,
@@ -283,45 +338,60 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
-  card: {
+  section: {
+    marginBottom: 16,
+  },
+  profileCardsContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  profileCardSmall: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FCE7F3',
+  avatarCircleSmall: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginBottom: 8,
   },
-  iconText: {
-    fontSize: 24,
+  userAvatar: {
+    backgroundColor: '#73b4caff',
   },
-  cardHeaderText: {
-    flex: 1,
+  partnerAvatarSmall: {
+    backgroundColor: '#afa4d6ff',
   },
-  cardTitle: {
-    fontSize: 18,
+  emptyAvatarSmall: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  avatarTextSmall: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  profileNameSmall: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 4,
   },
-  cardDescription: {
-    fontSize: 14,
-    color: '#6B7280',
+  profileNameEmpty: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 18,
@@ -330,6 +400,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     marginTop: 8,
     marginBottom: 12,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  emptyPartnerContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  emptyPartnerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  inviteButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  buttonGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inviteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   statusRow: {
     flexDirection: 'row',
@@ -341,8 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  statusIcon: {
-    fontSize: 24,
+  statusIconContainer: {
     marginRight: 12,
   },
   statusTitle: {
@@ -377,11 +481,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     marginTop: 16,
-  },
-  buttonGradient: {
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   connectButtonText: {
     color: '#FFFFFF',

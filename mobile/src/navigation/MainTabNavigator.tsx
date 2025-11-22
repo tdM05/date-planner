@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
 import { DateGeneratorScreen } from '../screens/DateGeneratorScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
+import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { useCoupleStore } from '../store';
 import { Home, Calendar, Heart, User } from 'lucide-react-native';
 
@@ -88,7 +88,7 @@ export const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={SettingsScreen}
+        component={ProfileStackNavigator}
         options={{
           tabBarIcon: ({ color, focused }) => (
             <ProfileIcon color={color} focused={focused} />

@@ -94,7 +94,7 @@ export const HomeScreen: React.FC = () => {
              </View>
              <TouchableOpacity
                style={styles.primaryButton}
-               onPress={() => navigation.navigate('InvitePartner')}
+               onPress={() => navigation.navigate('Profile', { screen: 'InvitePartner' })}
                activeOpacity={0.8}
              >
                <LinearGradient
@@ -107,7 +107,7 @@ export const HomeScreen: React.FC = () => {
                </LinearGradient>
              </TouchableOpacity>
              <TouchableOpacity
-               onPress={() => navigation.navigate('AcceptInvitation')}
+               onPress={() => navigation.navigate('Profile', { screen: 'AcceptInvitation' })}
                style={styles.secondaryTextButton}
                activeOpacity={0.7}
              >
