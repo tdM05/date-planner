@@ -48,14 +48,17 @@ class RealGoogleCalendarClient(AbstractClient):
 
         refresh_token = result.data[0]['google_refresh_token']
 
-        # Create credentials object
+        # Create credentials object with calendar read/write access
         credentials = Credentials(
             token=None,
             refresh_token=refresh_token,
             token_uri="https://oauth2.googleapis.com/token",
             client_id=settings.google_client_id,
             client_secret=settings.google_client_secret,
-            scopes=['https://www.googleapis.com/auth/calendar.readonly']
+            scopes=[
+                'https://www.googleapis.com/auth/calendar.readonly',
+                'https://www.googleapis.com/auth/calendar'
+            ]
         )
 
         # Refresh the access token
@@ -194,6 +197,76 @@ class RealGoogleCalendarClient(AbstractClient):
                 })
 
         return free_slots
+
+    def create_event(
+        self,
+        user_id: UUID,
+        summary: str,
+        start_time: datetime,
+        end_time: datetime,
+        location: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> Dict:
+        """
+        Create a calendar event for a user.
+
+        Args:
+            user_id: User's UUID
+            summary: Event title/name
+            start_time: Event start time
+            end_time: Event end time
+            location: Event location (optional)
+            description: Event description (optional)
+
+        Returns:
+            Dict with event details including htmlLink
+
+        Raises:
+            ValueError: If user has no calendar access token
+        """
+        credentials = self._get_credentials(user_id)
+        if not credentials:
+            raise ValueError(f"User {user_id} has no Google Calendar access")
+
+        # Build Calendar API service
+        service = build('calendar', 'v3', credentials=credentials)
+
+        # Ensure datetimes are timezone-aware (UTC)
+        start_time = _ensure_utc(start_time)
+        end_time = _ensure_utc(end_time)
+
+        # Create event body
+        event = {
+            'summary': summary,
+            'start': {
+                'dateTime': start_time.isoformat(),
+                'timeZone': 'UTC',
+            },
+            'end': {
+                'dateTime': end_time.isoformat(),
+                'timeZone': 'UTC',
+            },
+        }
+
+        if location:
+            event['location'] = location
+
+        if description:
+            event['description'] = description
+
+        # Insert event
+        created_event = service.events().insert(
+            calendarId='primary',
+            body=event
+        ).execute()
+
+        return {
+            'id': created_event.get('id'),
+            'htmlLink': created_event.get('htmlLink'),
+            'summary': created_event.get('summary'),
+            'start': created_event.get('start', {}).get('dateTime'),
+            'end': created_event.get('end', {}).get('dateTime'),
+        }
 
     def get_events_context(
         self,
@@ -343,6 +416,34 @@ class MockGoogleCalendarClient(AbstractClient):
             context_lines.append(line)
 
         return "\n".join(context_lines)
+
+    def create_event(
+        self,
+        user_id: UUID,
+        summary: str,
+        start_time: datetime,
+        end_time: datetime,
+        location: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> Dict:
+        """Create mock calendar event."""
+        print(f"--- Creating Mock Calendar Event for user {user_id} ---")
+        print(f"Summary: {summary}")
+        print(f"Start: {start_time.isoformat()}")
+        print(f"End: {end_time.isoformat()}")
+        if location:
+            print(f"Location: {location}")
+        if description:
+            print(f"Description: {description}")
+
+        # Return mock event data
+        return {
+            'id': 'mock_event_123',
+            'htmlLink': 'https://calendar.google.com/calendar/mock',
+            'summary': summary,
+            'start': start_time.isoformat(),
+            'end': end_time.isoformat(),
+        }
 
 
 def get_calendar_client() -> AbstractClient:

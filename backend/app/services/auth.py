@@ -22,9 +22,10 @@ from ._base import AbstractService
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# OAuth 2.0 scopes for Google Calendar and user info
+# OAuth 2.0 scopes for Google Calendar (read/write) and user info
 SCOPES = [
     'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/calendar',  # Write access for creating events
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'openid'
