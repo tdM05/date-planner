@@ -64,13 +64,7 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: {
-            backgroundColor: '#6200ee',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerShown: false,
         }}
       >
         {!isAuthenticated ? (

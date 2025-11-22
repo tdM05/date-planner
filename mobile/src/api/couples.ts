@@ -35,7 +35,8 @@ export const couplesAPI = {
    * Get partner information
    */
   getPartner: async (): Promise<Partner> => {
-    const response = await apiClient.get<Partner>(ENDPOINTS.COUPLES_PARTNER);
-    return response.data;
+    const response = await apiClient.get<CoupleResponse>(ENDPOINTS.COUPLES_PARTNER);
+    // Backend returns CoupleResponse, extract the partner object
+    return response.data.partner;
   },
 };

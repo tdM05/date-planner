@@ -2,9 +2,16 @@ import { create } from 'zustand';
 import { DatePlanResponse, DateGenerationRequest } from '../types';
 import { datesAPI } from '../api';
 
+interface DatePlanHistoryItem {
+  datePlan: DatePlanResponse;
+  request: DateGenerationRequest;
+  timestamp: string;
+}
+
 interface DateState {
   // State
   datePlan: DatePlanResponse | null;
+  datePlanHistory: DatePlanHistoryItem[];
   isGenerating: boolean;
   error: string | null;
   lastRequest: DateGenerationRequest | null;
@@ -19,6 +26,7 @@ interface DateState {
 export const useDateStore = create<DateState>((set, get) => ({
   // Initial state
   datePlan: null,
+  datePlanHistory: [],
   isGenerating: false,
   error: null,
   lastRequest: null,
@@ -28,7 +36,17 @@ export const useDateStore = create<DateState>((set, get) => ({
     try {
       set({ isGenerating: true, error: null, lastRequest: request });
       const datePlan = await datesAPI.generateCoupleDatePlan(request);
-      set({ datePlan });
+
+      // Add to history (keep last 10 plans)
+      const currentHistory = get().datePlanHistory;
+      const newHistoryItem: DatePlanHistoryItem = {
+        datePlan,
+        request,
+        timestamp: new Date().toISOString(),
+      };
+      const updatedHistory = [newHistoryItem, ...currentHistory].slice(0, 10);
+
+      set({ datePlan, datePlanHistory: updatedHistory });
     } catch (error: any) {
       let errorMessage = 'Failed to generate date plan';
 
@@ -48,7 +66,7 @@ export const useDateStore = create<DateState>((set, get) => ({
     }
   },
 
-  // Clear date plan
+  // Clear current date plan (but keep history)
   clearDatePlan: () => {
     set({ datePlan: null, lastRequest: null, error: null });
   },
@@ -58,10 +76,11 @@ export const useDateStore = create<DateState>((set, get) => ({
     set({ error: null });
   },
 
-  // Reset store (on logout)
+  // Reset store (on logout) - clears everything including history
   reset: () => {
     set({
       datePlan: null,
+      datePlanHistory: [],
       lastRequest: null,
       error: null,
     });
