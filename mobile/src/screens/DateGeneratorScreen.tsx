@@ -23,11 +23,15 @@ export const DateGeneratorScreen: React.FC = () => {
 
   const handleGenerate = async () => {
     try {
+      // Set end date to end of day to include full last day
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
       await generateDatePlan({
         prompt,
         location,
         start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
+        end_date: endOfDay.toISOString(),
       });
 
       // Navigate to results

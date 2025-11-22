@@ -184,7 +184,8 @@ Pick the best venue from the options above and suggest a good time for this date
             return None
 
     def pick_top_events(
-        self, all_venue_options: List[dict], num_events: int, weather: str, user_context: str
+        self, all_venue_options: List[dict], num_events: int, weather: str, user_context: str,
+        free_slots: List[dict] = None
     ) -> List[dict]:
         """
         Pick the top N date events from ALL collected venue options.
@@ -196,6 +197,7 @@ Pick the best venue from the options above and suggest a good time for this date
             num_events: Number of top events to return (e.g., 3)
             weather: Weather forecast information
             user_context: Context about the couple's schedules
+            free_slots: List of available free time slots with start/end times
 
         Returns:
             List of selected events: [{"venue_name": "...", "suggested_time": "...", "explanation": "..."}, ...]
@@ -224,7 +226,7 @@ Pick the best venue from the options above and suggest a good time for this date
                                 },
                                 "suggested_time": {
                                     "type": "string",
-                                    "description": "Suggested date and time for this event",
+                                    "description": "Suggested date and time for this event (MUST be selected from the available free time slots provided)",
                                 },
                                 "explanation": {
                                     "type": "string",
@@ -255,15 +257,26 @@ Pick the best venue from the options above and suggest a good time for this date
 
         venues_formatted = "\n\n".join(venues_text)
 
+        # Format free slots
+        free_slots_text = ""
+        if free_slots:
+            slots_formatted = []
+            for slot in free_slots:
+                slots_formatted.append(f"  - {slot['start']} to {slot['end']}")
+            free_slots_text = f"\n\nAvailable Free Time Slots:\n" + "\n".join(slots_formatted)
+            free_slots_text += f"\n\nIMPORTANT: You MUST pick suggested_time values that fall within these free time slots ONLY. Do NOT suggest times outside these slots."
+
         prompt = f"""
 Weather: {weather}
 Couple's Context: {user_context}
+{free_slots_text}
 
 All Available Venue Options ({len(all_venue_options)} total):
 {venues_formatted}
 
 Select the top {num_events} most suitable date events from the options above.
 Consider variety (different types of activities), ratings, and how well they fit the weather and couple's context.
+For each event, pick a suggested_time from the available free time slots that best fits the activity type.
 """
 
         system_prompt = (
@@ -338,7 +351,8 @@ class MockClaudeClient(AbstractClient):
         }
 
     def pick_top_events(
-        self, all_venue_options: List[dict], num_events: int, weather: str, user_context: str
+        self, all_venue_options: List[dict], num_events: int, weather: str, user_context: str,
+        free_slots: List[dict] = None
     ) -> List[dict]:
         """Pick mock top events from all venue options."""
         print(f"--- Mock: Picking top {num_events} events from {len(all_venue_options)} venues ---")

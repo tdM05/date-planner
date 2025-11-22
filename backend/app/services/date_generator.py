@@ -231,6 +231,7 @@ Please suggest 3 diverse date idea CONCEPTS that:
             num_events=3,
             weather=weather_info['forecast'],
             user_context=context_summary,
+            free_slots=free_slots,  # Pass free slots so Claude picks valid times
         )
 
         # PHASE 4: Create Event objects from Claude's selections
