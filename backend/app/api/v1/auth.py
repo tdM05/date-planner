@@ -3,7 +3,7 @@ Authentication API endpoints for Google OAuth flow.
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 
 from app.services.auth import get_auth_service, AuthService
 from app.core.models import GoogleAuthURL, LoginResponse, UserResponse, RegisterRequest, LoginRequest, User, CalendarStatusResponse
@@ -195,7 +195,16 @@ def google_callback(
             redirect_url = f"{base_url}oauth/callback?token={token}"
             print(f"[OAuth] Redirecting to (new user): {redirect_url}")
 
-        return RedirectResponse(url=redirect_url)
+        # Use JavaScript redirect for mobile deep links (more reliable than HTTP redirect)
+        html = f"""<!DOCTYPE html>
+<html>
+<head><title>Redirecting...</title></head>
+<body>
+<script>window.location.href = '{redirect_url}';</script>
+<p>Redirecting...</p>
+</body>
+</html>"""
+        return HTMLResponse(content=html)
     except Exception as e:
         # Redirect to error page
         error_msg = str(e).replace(" ", "+")
@@ -210,7 +219,17 @@ def google_callback(
 
         redirect_url = f"{base_url}oauth/callback?error={error_msg}"
         print(f"[OAuth] Redirecting to (error): {redirect_url}")
-        return RedirectResponse(url=redirect_url)
+
+        # Use JavaScript redirect for mobile deep links (more reliable than HTTP redirect)
+        html = f"""<!DOCTYPE html>
+<html>
+<head><title>Redirecting...</title></head>
+<body>
+<script>window.location.href = '{redirect_url}';</script>
+<p>Error occurred. Redirecting...</p>
+</body>
+</html>"""
+        return HTMLResponse(content=html)
 
 
 @router.get("/me", response_model=UserResponse)
