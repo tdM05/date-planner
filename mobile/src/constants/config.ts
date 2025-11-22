@@ -22,7 +22,6 @@ export const ENDPOINTS = {
   AUTH_ME: '/auth/me',
   AUTH_GOOGLE_LOGIN: '/auth/google/login',
   AUTH_GOOGLE_CALLBACK: '/auth/google/callback',
-  AUTH_GOOGLE_EXCHANGE_CODE: '/auth/google/exchange-code',
   AUTH_CALENDAR_STATUS: '/auth/calendar-status',
 
   // Couples

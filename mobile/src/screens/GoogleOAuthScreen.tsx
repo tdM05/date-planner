@@ -67,8 +67,8 @@ export const GoogleOAuthScreen: React.FC = () => {
 
       try {
         const url = new URL(event.url);
-        const code = url.searchParams.get('code');
-        const state = url.searchParams.get('state');
+        const token = url.searchParams.get('token');
+        const success = url.searchParams.get('success');
         const errorParam = url.searchParams.get('error');
 
         if (errorParam) {
@@ -78,16 +78,18 @@ export const GoogleOAuthScreen: React.FC = () => {
           return;
         }
 
-        if (code && state) {
-          console.log('[GoogleOAuth] Exchanging code for token...');
-          // Exchange code for token via backend
-          const response = await authAPI.exchangeGoogleOAuthCode(code, state);
-          console.log('[GoogleOAuth] Token received, setting...');
-          await setToken(response.access_token);
+        if (token) {
+          console.log('[GoogleOAuth] Token received from backend, setting...');
+          // Backend already exchanged code for token, just use it
+          await setToken(token);
           // Navigation will happen automatically
+        } else if (success === 'true') {
+          console.log('[GoogleOAuth] Calendar connected successfully');
+          // Calendar connection success (for existing users)
+          navigation.goBack();
         } else {
-          console.error('[GoogleOAuth] Missing code or state in deep link');
-          setError('OAuth callback missing required parameters');
+          console.error('[GoogleOAuth] Missing token in deep link');
+          setError('OAuth callback missing token');
           setIsLoading(false);
         }
       } catch (err: any) {

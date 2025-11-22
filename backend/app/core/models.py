@@ -94,12 +94,6 @@ class GoogleAuthURL(BaseModel):
     authorization_url: str
 
 
-class GoogleOAuthCodeExchangeRequest(BaseModel):
-    """Request to exchange OAuth authorization code for access token"""
-    code: str = Field(..., description="Authorization code from Google OAuth callback")
-    state: Optional[str] = Field(None, description="State parameter from OAuth flow")
-
-
 class CalendarStatusResponse(BaseModel):
     """Response indicating calendar connection status for user and partner"""
     user_connected: bool = Field(..., description="Whether current user has Google Calendar connected")

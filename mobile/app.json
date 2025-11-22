@@ -30,7 +30,10 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://date-planner-production.up.railway.app"
+      "apiUrl": "https://date-planner-production.up.railway.app",
+      "eas": {
+        "projectId": "833e7e84-5096-4615-af55-cd9547f0aa17"
+      }
     }
   }
 }
