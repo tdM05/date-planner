@@ -179,7 +179,7 @@ def google_callback(
             base_url = custom_redirect_url
         elif platform == "mobile":
             # Default mobile deep link
-            base_url = "dateplanner:"
+            base_url = "dateplanner://"
         else:
             # Fallback to localhost for web
             base_url = "http://localhost:8081"
@@ -187,12 +187,12 @@ def google_callback(
         # Build final redirect URL with parameters
         if isinstance(result, dict):
             # Existing user connecting calendar
-            redirect_url = f"{base_url}/oauth/callback?success=true"
+            redirect_url = f"{base_url}oauth/callback?success=true"
             print(f"[OAuth] Redirecting to (calendar connect): {redirect_url}")
         else:
             # New user - include token
             token = result.access_token
-            redirect_url = f"{base_url}/oauth/callback?token={token}"
+            redirect_url = f"{base_url}oauth/callback?token={token}"
             print(f"[OAuth] Redirecting to (new user): {redirect_url}")
 
         return RedirectResponse(url=redirect_url)
@@ -204,11 +204,11 @@ def google_callback(
         if custom_redirect_url:
             base_url = custom_redirect_url
         elif platform == "mobile":
-            base_url = "dateplanner:"
+            base_url = "dateplanner://"
         else:
             base_url = "http://localhost:8081"
 
-        redirect_url = f"{base_url}/oauth/callback?error={error_msg}"
+        redirect_url = f"{base_url}oauth/callback?error={error_msg}"
         print(f"[OAuth] Redirecting to (error): {redirect_url}")
         return RedirectResponse(url=redirect_url)
 
