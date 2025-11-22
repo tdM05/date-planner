@@ -14,6 +14,7 @@ export interface AddEventResponse {
   event_id: string;
   event_link: string;
   message: string;
+  added_to_partner_calendar?: boolean;
 }
 
 export const calendarAPI = {
