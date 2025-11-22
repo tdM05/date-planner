@@ -126,7 +126,7 @@ export const ScheduleScreen: React.FC = () => {
                   </Text>
                   <View style={styles.durationBadge}>
                     <Text style={styles.durationText}>
-                      {`${slot.duration_hours}h free`}
+                      {`${slot.duration_hours.toFixed(2)}h free`}
                     </Text>
                   </View>
                 </View>
