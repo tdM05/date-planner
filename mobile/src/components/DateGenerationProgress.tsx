@@ -64,10 +64,6 @@ export const DateGenerationProgress: React.FC<DateGenerationProgressProps> = ({ 
           style={styles.gradientContainer}
         >
           <View style={styles.content}>
-            <Text variant="displaySmall" style={styles.emoji}>
-              💕
-            </Text>
-
             <Text variant="headlineSmall" style={styles.title}>
               Planning Your Date
             </Text>
@@ -86,12 +82,6 @@ export const DateGenerationProgress: React.FC<DateGenerationProgressProps> = ({ 
             <Text variant="bodyLarge" style={styles.message}>
               {STAGES[currentStage].message}
             </Text>
-
-            <View style={styles.hearts}>
-              <Text style={styles.heartEmoji}>💕</Text>
-              <Text style={styles.heartEmoji}>💖</Text>
-              <Text style={styles.heartEmoji}>💝</Text>
-            </View>
           </View>
         </LinearGradient>
       </View>
@@ -116,10 +106,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 32,
     alignItems: 'center',
-  },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 16,
   },
   title: {
     color: '#EC4899',
@@ -147,13 +133,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     minHeight: 60,
-  },
-  hearts: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 8,
-  },
-  heartEmoji: {
-    fontSize: 24,
   },
 });
