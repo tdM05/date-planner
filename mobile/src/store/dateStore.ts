@@ -51,10 +51,9 @@ export const useDateStore = create<DateState>((set, get) => ({
       let errorMessage = 'Failed to generate date plan';
 
       // Handle specific error cases
-      if (error.status === 428) {
-        errorMessage = 'Please connect your Google Calendar first';
-      } else if (error.status === 400) {
-        errorMessage = error.message || 'Invalid request. Please check your inputs.';
+      if (error.status === 428 || error.status === 400) {
+        // Use backend's detailed error message for calendar and validation errors
+        errorMessage = error.message || errorMessage;
       } else if (error.message) {
         errorMessage = error.message;
       }
