@@ -51,7 +51,8 @@ For **iOS users**, the app can be tested by running it locally through Expo Go. 
    npx expo start --tunnel
 ```
   > **Note**: Tunnel mode works better on university/restricted networks but may be slower. If you're on a simple home WiFi, the default method should work.
-4.**Wait for QR code to appear** (1-2 minutes for tunnel mode, faster for default)
+
+4. **Wait for QR code to appear** (1-2 minutes for tunnel mode, faster for default)
 
 5. **Scan the QR code** with your iPhone camera
 
@@ -68,17 +69,19 @@ For **iOS users**, the app can be tested by running it locally through Expo Go. 
 1. Sign Up & Connect Your Calendar
    Recommended: Sign up with Google to automatically sync your calendar
    Manual Entry: If you sign up manually, you'll need to sync your Google Calendar in the Profile tab after logging in
-   ⚠️ Note: TwoDo currently supports Google Calendar only.
+   > ⚠️ Note: TwoDo currently supports Google Calendar only.
+   
 2. Link with Your Partner
-   Send an invitation link to your partner, OR
-   Accept an invitation from your partner
-   Once connected, you can both see shared availability
+   Send an invitation link to your partner, OR Accept an invitation from your partner. Once connected, you can both see shared availability
+   
 3. Set Your Location & Preferences
    Tell us what you enjoy: cuisine types, activities, budget range
    These preferences help our AI generate better date suggestions
+   
 4. Get AI-Powered Suggestions
    Receive 3 ranked date ideas tailored to your schedule and preferences
    Each suggestion includes venue details, ratings, and an explanation of why it's a good fit to your schedule
+   
 5. Book Your Date
    Choose your favorite suggestion. Add it to both calendars with one tap. No manual entry needed!
 
@@ -86,6 +89,7 @@ For **iOS users**, the app can be tested by running it locally through Expo Go. 
 This project was built for Toronto Anthropic AI Hacakthon.
 
 ## License
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT)
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+
 
 
